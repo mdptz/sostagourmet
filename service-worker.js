@@ -1,9 +1,9 @@
 const CACHE_NAME = 'sostagourmet-v1';
 const ASSETS = [
   'index.html',
-  'manifest.json'
+  'manifest.json',
+  'icon.svg'
 ];
-
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
