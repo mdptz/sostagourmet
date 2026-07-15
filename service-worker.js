@@ -35,6 +35,11 @@ self.addEventListener('activate', (e) => {
 
 // Gestione delle richieste (Fetch)
 self.addEventListener('fetch', (e) => {
+  // REGOLA D'ORO: Non intercettare MAI richieste che non siano GET (come le POST a Google Apps Script per GPS e Gemini)
+  if (e.request.method !== 'GET') {
+    return; // Lascia che vadano direttamente alla rete senza interferenze
+  }
+
   // Lascia che le chiamate di geolocalizzazione, Leaflet e Apps Script vadano sempre direttamente sulla rete
   if (e.request.url.includes('google.com') || e.request.url.includes('unpkg.com') || e.request.url.includes('basemaps.cartocdn.com')) {
     return; // Non intercettare queste chiamate
