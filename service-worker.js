@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sostagourmet-v1'; // Incrementa questo numero (v2, v3...) quando fai modifiche sostanziali all'HTML
+const CACHE_NAME = 'sostagourmet-v3'; // Incrementa questo numero (v2, v3...) quando fai modifiche sostanziali all'HTML
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -11,9 +11,7 @@ self.addEventListener('install', (e) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[Service Worker] Installazione e salvataggio degli asset...');
       
-      // Salviamo ogni risorsa individualmente così se un file (es. icon.svg)
-      // ha un ritardo o manca temporaneamente, gli altri vengono memorizzati
-      // e il Service Worker si attiva comunque senza bloccare l'app!
+      // Salviamo ogni risorsa omettendo errori critici di rete se un file è momentaneamente offline
       return Promise.all(
         ASSETS.map((asset) => {
           return cache.add(asset).catch((err) => {
@@ -53,10 +51,11 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
   // REGOLA D'ORO 2: Gestisci SOLO le richieste per la nostra PWA (index, manifest, icona)
-  // Tutto il resto (mappa, API di geolocalizzazione, telefonate, font) viene lasciato nativo
+  // Supporta anche l'URL di base (con o senza barra finale, o cartella della repository)
   const cercaAsset = ASSETS.some(asset => {
     const nomePulito = asset.replace('./', '');
-    return url.pathname.endsWith(nomePulito);
+    return url.pathname.endsWith(nomePulito) || 
+           (nomePulito === 'index.html' && (url.pathname.endsWith('/') || url.pathname.endsWith('sostagourmet') || url.pathname.endsWith('sostagourmet/')));
   });
 
   if (!cercaAsset) {
