@@ -5,12 +5,22 @@ const ASSETS = [
   './icon.svg'
 ];
 
-// Fase di installazione: salva i file principali nella cache
+// Fase di installazione: tenta il caching dei singoli file in modo tollerante
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching app shell...');
-      return cache.addAll(ASSETS);
+      console.log('[Service Worker] Installazione e salvataggio degli asset...');
+      
+      // Salviamo ogni risorsa individualmente così se un file (es. icon.svg)
+      // ha un ritardo o manca temporaneamente, gli altri vengono memorizzati
+      // e il Service Worker si attiva comunque senza bloccare l'app!
+      return Promise.all(
+        ASSETS.map((asset) => {
+          return cache.add(asset).catch((err) => {
+            console.warn(`[Service Worker] Caching fallito per risorsa opzionale: ${asset}`, err);
+          });
+        })
+      );
     }).then(() => {
       return self.skipWaiting(); // Forza il nuovo service worker a diventare attivo subito
     })
@@ -23,7 +33,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
         if (key !== CACHE_NAME) {
-          console.log('[Service Worker] Rimozione vecchia cache:', key);
+          console.log('[Service Worker] Rimozione vecchia cache in corso:', key);
           return caches.delete(key);
         }
       }));
@@ -33,22 +43,33 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Gestione delle richieste (Fetch)
+// Gestione delle richieste (Fetch) con bypass totale delle chiamate esterne
 self.addEventListener('fetch', (e) => {
-  // REGOLA D'ORO: Non intercettare MAI richieste che non siano GET (come le POST a Google Apps Script per GPS e Gemini)
+  // REGOLA D'ORO 1: Ignora qualsiasi richiesta che non sia di tipo GET (es. le POST a Apps Script)
   if (e.request.method !== 'GET') {
-    return; // Lascia che vadano direttamente alla rete senza interferenze
+    return;
   }
 
-  // Lascia che le chiamate di geolocalizzazione, Leaflet e Apps Script vadano sempre direttamente sulla rete
-  if (e.request.url.includes('google.com') || e.request.url.includes('unpkg.com') || e.request.url.includes('basemaps.cartocdn.com')) {
-    return; // Non intercettare queste chiamate
+  const url = new URL(e.request.url);
+
+  // REGOLA D'ORO 2: Gestisci SOLO le richieste per la nostra PWA (index, manifest, icona)
+  // Tutto il resto (mappa, API di geolocalizzazione, telefonate, font) viene lasciato nativo
+  const cercaAsset = ASSETS.some(asset => {
+    const nomePulito = asset.replace('./', '');
+    return url.pathname.endsWith(nomePulito);
+  });
+
+  if (!cercaAsset) {
+    return; // Lascia scorrere liberamente sulla rete nativa senza interferenze
   }
 
   e.respondWith(
     caches.match(e.request).then((response) => {
-      // Se il file è in cache lo restituisce subito (velocità fulminea), altrimenti lo scarica da internet
+      // Se il file è in cache lo restituisce subito, altrimenti lo scarica da internet
       return response || fetch(e.request);
+    }).catch(() => {
+      // Fallback d'emergenza sulla rete in caso di errore di lettura della cache
+      return fetch(e.request);
     })
   );
 });
