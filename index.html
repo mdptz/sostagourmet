@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SostaGourmet - Osterie al Casello</title>
+    <!-- Tailwind CSS per la grafica moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome per le icone del copilota e dei pulsanti -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS e JS di Leaflet.js per la mappa interattiva senza API Key -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        /* Risolve eventuali conflitti di visualizzazione dell'indice z di Leaflet */
+        #map {
+            z-index: 10;
+        }
+        /* Effetto onda pulsante per l'assistente vocale durante l'ascolto attivo */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+        .voice-active {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-white font-sans min-h-screen flex flex-col justify-between p-4">
+
+    <!-- Header Principale -->
+    <header class="text-center py-4 flex flex-col items-center">
+        <h1 class="text-3xl font-black text-amber-500 tracking-wide flex items-center gap-2">
+            <i class="fa-solid fa-car-side"></i> SOSTA GOURMET
+        </h1>
+        <p class="text-gray-400 text-xs mt-1">Trova la vera osteria tipica vicino al tuo casello.</p>
+    </header>
+
+    <!-- FORM DI INGRESSO E CO-PILOTA -->
+    <main id="app-content" class="flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
+        
+        <!-- CARD ASSISTENTE VOCALE STRATEGICO -->
+        <div class="bg-gradient-to-br from-amber-500/20 to-gray-900 rounded-2xl border border-amber-500/30 p-5 shadow-xl flex flex-col items-center text-center space-y-3">
+            <div id="voice-icon-container" class="w-14 h-14 rounded-full bg-amber-500 text-gray-950 flex items-center justify-center text-2xl shadow-lg transition-all duration-300">
+                <i id="voice-icon" class="fa-solid fa-microphone"></i>
+            </div>
+            <div>
+                <h3 id="voice-status-title" class="font-bold text-amber-500">Copilota Vocale Attivo</h3>
+                <p id="voice-status-desc" class="text-xs text-gray-300 mt-0.5">Premi per avviare la ricerca a mani libere con assistente vocale.</p>
+            </div>
+            <button type="button" id="btn-voice-start" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-black py-3 rounded-xl transition text-sm active:scale-95 flex justify-center items-center gap-2 shadow-md">
+                <i class="fa-solid fa-play"></i> AVVIA COPILOTA VOCALE
+            </button>
+            <!-- Nota informativa sulle modalità d'uso e bypass del microfono -->
+            <p class="text-[10px] text-amber-500/60 leading-snug max-w-xs mt-1">
+                <i class="fa-solid fa-lightbulb mr-1"></i> <b>Consiglio per Google Apps Script:</b> Scrivi prima la Meta a mano qui sotto per bypassare l'errore del microfono e ricevere la descrizione vocale dei risultati!
+            </p>
+        </div>
+
+        <!-- Modulo di viaggio manuale o assistito -->
+        <form id="viaggio-form" class="space-y-4">
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-3">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-amber-500 font-bold text-sm">📍 Compilazione Manuale</label>
+                    <button type="button" id="btn-gps" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fa-solid fa-location-crosshairs animate-pulse"></i> Solo GPS
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="autostrada" required placeholder="Es. A1" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center font-bold transition-all duration-300">
+                    <input type="text" id="meta" required placeholder="La tua meta (es. Milano)" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300">
+                </div>
+                <input type="text" id="ultimoCasello" required placeholder="Ultimo casello superato (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300">
+            </div>
+
+            <!-- Slider di preferenza -->
+            <div class="space-y-4 bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl text-sm">
+                <div>
+                    <div class="flex justify-between font-bold">
+                        <span>⏱️ Ho fame tra:</span>
+                        <span id="tempo-val" class="text-amber-500 font-black">30 minuti</span>
+                    </div>
+                    <input type="range" id="tempoAllaSosta" min="15" max="90" step="15" value="30" class="w-full accent-amber-500 mt-1">
+                </div>
+
+                <div>
+                    <div class="flex justify-between font-bold">
+                        <span>🚗 Distanza max dal casello:</span>
+                        <span id="distanza-val" class="text-amber-500 font-black">10 minuti</span>
+                    </div>
+                    <input type="range" id="distanzaMaxCasello" min="5" max="25" step="5" value="10" class="w-full accent-amber-500 mt-1">
+                </div>
+
+                <div>
+                    <div class="flex justify-between font-bold">
+                        <span>💰 Budget max a testa:</span>
+                        <span id="budget-val" class="text-amber-500 font-black">30 €</span>
+                    </div>
+                    <input type="range" id="budget" min="15" max="60" step="5" value="30" class="w-full accent-amber-500 mt-1">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-black text-lg py-4 rounded-2xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2">
+                <i class="fa-solid fa-utensils"></i> TROVA LE TRATTORIE
+            </button>
+        </form>
+    </main>
+
+    <!-- SCHERMATA CARICAMENTO -->
+    <div id="loading" class="hidden flex-grow flex flex-col items-center justify-center text-center space-y-4 max-w-md mx-auto">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500"></div>
+        <p class="text-lg font-bold">Interrogando le guide locali...</p>
+        <p class="text-xs text-gray-400">Cerco le 3 migliori osterie tipiche sul tuo percorso.</p>
+    </div>
+
+    <!-- SCHERMATA RISULTATI -->
+    <div id="risultato" class="hidden flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
+        
+        <!-- Mappa di Leaflet interattiva -->
+        <div id="map" class="h-60 w-full rounded-2xl border border-gray-800 shadow-xl overflow-hidden"></div>
+
+        <div class="text-center">
+            <span id="res-casello" class="bg-amber-500 text-gray-950 text-xs font-black uppercase px-3 py-1 rounded-full">CASCO_CONSIGLIATO</span>
+        </div>
+
+        <!-- Selettore Tab per le 3 opzioni di ristorante -->
+        <div class="grid grid-cols-3 gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs font-bold text-center">
+            <button type="button" id="tab-0" onclick="mostraRistorante(0)" class="py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200">Opzione 1</button>
+            <button type="button" id="tab-1" onclick="mostraRistorante(1)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200">Opzione 2</button>
+            <button type="button" id="tab-2" onclick="mostraRistorante(2)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200">Opzione 3</button>
+        </div>
+
+        <!-- Scheda dettagliata del ristorante attualmente selezionato -->
+        <div class="bg-gray-900 rounded-2xl border border-gray-800 p-5 shadow-2xl space-y-3">
+            <div>
+                <h2 id="res-nome" class="text-xl font-black text-amber-500">-</h2>
+                <p id="res-indirizzo" class="text-gray-400 text-xs mt-0.5">-</p>
+                <p id="res-tempo" class="text-xs font-bold mt-1 text-green-400"><i class="fa-solid fa-car"></i> -</p>
+            </div>
+
+            <div>
+                <h4 class="text-amber-500 font-bold text-xs uppercase tracking-wider">Perché merita:</h4>
+                <p id="res-descrizione" class="text-sm text-gray-300 leading-relaxed mt-0.5">-</p>
+            </div>
+
+            <div>
+                <h4 class="text-amber-500 font-bold text-xs uppercase tracking-wider">Piatti consigliati:</h4>
+                <ul id="res-piatti" class="list-disc list-inside text-xs text-gray-300 space-y-0.5 mt-0.5"></ul>
+            </div>
+
+            <div class="flex justify-between items-center bg-gray-800 p-2.5 rounded-xl text-xs font-bold">
+                <span>Spesa stimata a testa:</span>
+                <span id="res-prezzo" class="text-amber-500 text-sm">-</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <a id="btn-chiama" href="#" class="bg-emerald-600 hover:bg-emerald-700 text-white text-center font-bold py-3 rounded-xl flex justify-center items-center gap-1.5 text-base">
+                    <i class="fa-solid fa-phone"></i> CHIAMA
+                </a>
+                <a id="btn-naviga" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white text-center font-bold py-3 rounded-xl flex justify-center items-center gap-1.5 text-base">
+                    <i class="fa-solid fa-map-location-dot"></i> NAVIGA
+                </a>
+            </div>
+        </div>
+
+        <button id="btn-reset" class="w-full bg-gray-900 hover:bg-gray-800 text-white border border-gray-800 font-bold py-3 rounded-xl text-xs">
+            🔄 Cerca un'altra sosta
+        </button>
+    </div>
+
+    <!-- Banner dei Messaggi di Errore Custom -->
+    <div id="error-banner" class="hidden fixed bottom-4 left-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-2xl flex justify-between items-center z-50">
+        <span id="error-text" class="text-xs font-bold"></span>
+        <button onclick="document.getElementById('error-banner').classList.add('hidden')" class="text-white ml-2"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-[10px] text-gray-600 py-2 mt-4">
+        SostaGourmet © 2026 - Powered by Google Apps Script
+    </footer>
+
+    <script>
+        // Configura qui la tua URL della Web App di Google Apps Script (ottenuta facendo il Deploy definitivo)
+        // Se usi l'app direttamente dentro Apps Script, puoi lasciare la riga così com'è.
+        const APPS_SCRIPT_URL = "INSERISCI_QUI_L_URL_DELLA_TUA_WEB_APP";
+
+        // Gestione degli slider grafici
+        function setupSlider(sliderId, valId, suffix) {
+            var slider = document.getElementById(sliderId);
+            var val = document.getElementById(valId);
+            if (slider && val) {
+                slider.addEventListener('input', function() {
+                    val.textContent = slider.value + suffix;
+                });
+            }
+        }
+        setupSlider('tempoAllaSosta', 'tempo-val', ' minuti');
+        setupSlider('distanzaMaxCasello', 'distanza-val', ' minuti');
+        setupSlider('budget', 'budget-val', ' €');
+
+        var form = document.getElementById('viaggio-form');
+        var appContent = document.getElementById('app-content');
+        var loading = document.getElementById('loading');
+        var risultato = document.getElementById('risultato');
+
+        // Memorizzazione globale delle opzioni ristoranti e della mappa
+        var ristorantiTrovati = [];
+        var mappaApp = null;
+        var markerLayers = [];
+
+        // Flag per verificare se la ricerca corrente è stata avviata in modalità vocale
+        var modalitaVocaleAttiva = false;
+
+        // SISTEMA VOCALE: SINTESI E RICONOSCIMENTO VOCALE NATI
+        var sintesiVocale = window.speechSynthesis;
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var riconoscimentoVocale = null;
+
+        if (SpeechRecognition) {
+            riconoscimentoVocale = new SpeechRecognition();
+            riconoscimentoVocale.lang = 'it-IT';
+            riconoscimentoVocale.interimResults = false;
+            riconoscimentoVococaleMaxAlternatives = 1;
+        }
+
+        // Funzione per generare un bip acustico via browser prima dell'ascolto
+        function suonaBip() {
+            try {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioCtx.createOscillator();
+                var gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume moderato
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.15); // Suona per 150 millisecondi
+            } catch (e) {
+                console.log("AudioContext non ancora abilitato dall'interazione utente.");
+            }
+        }
+
+        // Funzione per far parlare il dispositivo
+        function parla(testo, onEndCallback) {
+            if (!sintesiVocale) {
+                if (onEndCallback) onEndCallback();
+                return;
+            }
+            sintesiVocale.cancel(); // Ferma eventuali letture precedenti
+            var u = new SpeechSynthesisUtterance(testo);
+            u.lang = 'it-IT';
+            u.rate = 1.0;
+            if (onEndCallback) {
+                u.onend = onEndCallback;
+            }
+            sintesiVocale.speak(u);
+        }
+
+        /**
+         * Gestisce la comunicazione unificata tra Apps Script interno ed esterno (GitHub fetch)
+         */
+        function inviaDatiAlServer(azione, dati, onSuccess, onFailure) {
+            // Rileva se stiamo girando dentro Google Apps Script o su un sito esterno
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                if (azione === "chiamaGemini") {
+                    google.script.run
+                        .withSuccessHandler(onSuccess)
+                        .withFailureHandler(onFailure)
+                        .chiamaGemini(dati);
+                } else if (azione === "rilevaPosizione") {
+                    google.script.run
+                        .withSuccessHandler(onSuccess)
+                        .withFailureHandler(onFailure)
+                        .rilevaPosizioneAutostrada(dati.lat, dati.lon);
+                }
+            } else {
+                // Chiamata esterna standard fetch (CORS-friendly per GitHub Pages)
+                if (APPS_SCRIPT_URL === "" || APPS_SCRIPT_URL.indexOf("INSERISCI_QUI") !== -1) {
+                    onFailure({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });
+                    return;
+                }
+                
+                var payloadPost = { action: azione };
+                if (azione === "chiamaGemini") {
+                    payloadPost.datiViaggio = dati;
+                } else if (azione === "rilevaPosizione") {
+                    payloadPost.lat = dati.lat;
+                    payloadPost.lon = dati.lon;
+                }
+
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' }, // Indispensabile per evitare pre-flight OPTIONS
+                    body: JSON.stringify(payloadPost)
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.error) {
+                        onFailure({ message: data.error });
+                    } else {
+                        onSuccess(data);
+                    }
+                })
+                .catch(function(err) {
+                    onFailure({ message: "Errore di connessione con il server API: " + err.message });
+                });
+            }
+        }
+
+        // Invia i dati al server
+        form.addEventListener('submit', function(e) {
+            if (e) e.preventDefault();
+
+            appContent.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            var datiViaggio = {
+                autostrada: document.getElementById('autostrada').value,
+                meta: document.getElementById('meta').value,
+                ultimoCasello: document.getElementById('ultimoCasello').value,
+                tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
+                distanzaMaxCasello: document.getElementById('distanzaMaxCasello').value,
+                budget: document.getElementById('budget').value
+            };
+
+            inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
+        });
+
+        // Mostra a schermo l'errore in modo amichevole
+        function mostraErrore(messaggio) {
+            var banner = document.getElementById('error-banner');
+            document.getElementById('error-text').textContent = messaggio;
+            banner.classList.remove('hidden');
+            setTimeout(function() {
+                banner.classList.add('hidden');
+            }, 6000);
+            if (modalitaVocaleAttiva) {
+                parla("Si è verificato un errore: " + messaggio);
+            }
+        }
+
+        // Gestione del successo
+        function onSuccess(data) {
+            if (!data.ristoranti || data.ristoranti.length === 0) {
+                onFailure({ message: "Nessun ristorante valido restituito." });
+                return;
+            }
+
+            document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();
+            ristorantiTrovati = data.ristoranti;
+
+            // Aggiorna i testi dei tab con i nomi abbreviati dei ristoranti
+            for (var i = 0; i < 3; i++) {
+                var tab = document.getElementById('tab-' + i);
+                if (tab && ristorantiTrovati[i]) {
+                    tab.textContent = ristorantiTrovati[i].nomeRistorante.substring(0, 12) + (ristorantiTrovati[i].nomeRistorante.length > 12 ? '..' : '');
+                }
+            }
+
+            loading.classList.add('hidden');
+            risultato.classList.remove('hidden');
+
+            // Inizializza o aggiorna la mappa
+            aggiornaMappa();
+
+            // Mostra il primo ristorante della lista
+            mostraRistorante(0);
+
+            // Se la ricerca è vocale, l'assistente ti parla dei risultati
+            if (modalitaVocaleAttiva) {
+                var primoRisto = ristorantiTrovati[0];
+                var piattiTesto = primoRisto.piattiConsigliati ? primoRisto.piattiConsigliati.join(" e ") : "specialità tipiche";
+                
+                var testoRisultato = "Ho trovato tre osterie fantastiche sul tuo percorso. " +
+                    "Ti consiglio di uscire al casello di " + data.caselloConsigliato + ". " +
+                    "La sosta migliore è l'osteria " + primoRisto.nomeRistorante + ", situata a soli " + primoRisto.tempoDalCasello + " minuti dall'uscita. " +
+                    "Prezzo medio stimato a testa: " + primoRisto.prezzoMedioStimato + ". " +
+                    "I piatti consigliati sono: " + piattiTesto + ". " +
+                    "Buon appetito e prudenza alla guida!";
+                
+                parla(testoRisultato);
+            }
+        }
+
+        function onFailure(error) {
+            mostraErrore("Errore: " + error.message);
+            loading.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            resetGraficaVocale();
+        }
+
+        // Funzione per compilare i dettagli dell'opzione selezionata
+        function mostraRistorante(indice) {
+            var ristorante = ristorantiTrovati[indice];
+            if (!ristorante) return;
+
+            // Modifica lo stato attivo dei tab graficamente
+            for (var i = 0; i < 3; i++) {
+                var tab = document.getElementById('tab-' + i);
+                if (i === indice) {
+                    tab.className = "py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200 font-bold";
+                } else {
+                    tab.className = "py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold";
+                }
+            }
+
+            // Aggiorna le informazioni testuali della scheda attiva
+            document.getElementById('res-nome').textContent = ristorante.nomeRistorante;
+            document.getElementById('res-indirizzo').textContent = ristorante.indirizzo;
+            document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + ristorante.tempoDalCasello + ' minuti dal casello';
+            document.getElementById('res-descrizione').textContent = ristorante.percheMerita;
+            document.getElementById('res-prezzo').textContent = ristorante.prezzoMedioStimato || "Sotto i 30€";
+
+            var listaPiatti = document.getElementById('res-piatti');
+            listaPiatti.innerHTML = '';
+            if (ristorante.piattiConsigliati) {
+                ristorante.piattiConsigliati.forEach(function(piatto) {
+                    var li = document.createElement('li');
+                    li.textContent = piatto;
+                    listaPiatti.appendChild(li);
+                });
+            }
+
+            document.getElementById('btn-chiama').href = 'tel:' + ristorante.telefono;
+            var queryMappa = encodeURIComponent(ristorante.nomeRistorante + ' ' + ristorante.indirizzo);
+            document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;
+
+            // Sposta la mappa e apri il popup del ristorante selezionato
+            if (mappaApp && markerLayers[indice]) {
+                mappaApp.setView([ristorante.lat, ristorante.lng], 14);
+                markerLayers[indice].openPopup();
+            }
+        }
+
+        function aggiornaMappa() {
+            // Se la mappa non esiste ancora, la creiamo da zero
+            if (!mappaApp) {
+                mappaApp = L.map('map', {
+                    zoomControl: false // Disabilitiamo per un'interfaccia mobile pulita
+                }).setView([ristorantiTrovati[0].lat, ristorantiTrovati[0].lng], 12);
+
+                // Aggiungiamo lo strato cartografico scuro (Dark Mode CartoDB per abbinarsi all'app)
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(mappaApp);
+            }
+
+            // Forza il ricalcolo delle dimensioni della mappa (essenziale dato che l'elemento era nascosto)
+            setTimeout(function() {
+                mappaApp.invalidateSize();
+            }, 100);
+
+            // Rimuoviamo i vecchi marker esistenti
+            markerLayers.forEach(function(marker) {
+                mappaApp.removeLayer(marker);
+            });
+            markerLayers = [];
+
+            // Creiamo un'icona personalizzata bellissima e a prova di errore (inline SVG/HTML)
+            var creaIconaCustom = function(numero) {
+                return L.divIcon({
+                    html: '<div class="bg-amber-500 text-gray-950 font-black rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-xl text-sm">' + numero + '</div>',
+                    className: 'custom-div-icon',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+            };
+
+            var bounds = [];
+
+            // Posiziona i 3 marker sulla mappa
+            ristorantiTrovati.forEach(function(ristorante, indice) {
+                var marker = L.marker([ristorante.lat, ristorante.lng], {
+                    icon: creaIconaCustom(indice + 1)
+                }).addTo(mappaApp);
+
+                marker.bindPopup("<b class='text-gray-900'>" + ristorante.nomeRistorante + "</b><br><span class='text-xs text-gray-650'>" + ristorante.indirizzo + "</span>");
+                
+                // Cliccando sul marker si apre la corrispondente scheda in basso
+                marker.on('click', function() {
+                    mostraRistorante(indice);
+                });
+
+                markerLayers.push(marker);
+                bounds.push([ristorante.lat, ristorante.lng]);
+            });
+
+            // Adatta l'inquadratura per mostrare contemporaneamente tutti e 3 i ristoranti
+            if (bounds.length > 0) {
+                mappaApp.fitBounds(bounds, { padding: [40, 40] });
+            }
+        }
+
+        // Bottone reset
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            risultato.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            resetGraficaVocale();
+        });
+
+        // Gestione del pulsante GPS automatico (solo GPS, non vocale)
+        document.getElementById('btn-gps').addEventListener('click', function() {
+            rilevaGPS(false);
+        });
+
+        // FUNZIONE UNIFICATA RILEVAMENTO GPS
+        function rilevaGPS(isVocale) {
+            var btn = document.getElementById('btn-gps');
+            var originalContent = btn.innerHTML;
+            
+            if (!isVocale) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Rilevo...';
+            }
+
+            if (!navigator.geolocation) {
+                mostraErrore("La geolocalizzazione non è supportata dal browser.");
+                if (!isVocale) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lon = position.coords.longitude;
+
+                var payloadGPS = { lat: lat, lon: lon };
+
+                inviaDatiAlServer("rilevaPosizione", payloadGPS, function(data) {
+                    if (data && data.autostrada) {
+                        document.getElementById('autostrada').value = data.autostrada;
+                        document.getElementById('ultimoCasello').value = data.ultimoCasello;
+                        flashField('autostrada');
+                        flashField('ultimoCasello');
+
+                        if (isVocale) {
+                            // CONTROLLO DI BYPASS: Se la meta è già stata scritta a mano, saltiamo l'ascolto microfono!
+                            var metaGiaInserita = document.getElementById('meta').value.trim();
+                            if (metaGiaInserita !== "") {
+                                var fraseConferma = "Posizione rilevata sulla " + data.autostrada + 
+                                    " all'altezza di " + data.ultimoCasello + ". Avvio la ricerca delle osterie verso " + metaGiaInserita + ".";
+                                
+                                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
+                                parla(fraseConferma, function() {
+                                    form.dispatchEvent(new Event('submit'));
+                                });
+                            } else {
+                                // Flusso vocale standard: fa la domanda e attiva il microfono
+                                var fraseDomanda = "Posizione rilevata sulla " + data.autostrada + 
+                                    " all'altezza di " + data.ultimoCasello + ". Pronuncia la tua meta dopo il bip.";
+                                
+                                impostaStatoVocale("Sto parlando...", "bg-blue-600 animate-pulse", "fa-solid fa-volume-high");
+                                parla(fraseDomanda, function() {
+                                    setTimeout(function() {
+                                        avviaAscoltoMeta();
+                                    }, 1200);
+                                });
+                            }
+                        }
+                    } else {
+                        mostraErrore("Non sono riuscito ad agganciare l'autostrada. Assicurati di essere in autostrada!");
+                    }
+                    if (!isVocale) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                    }
+                }, function(error) {
+                    mostraErrore("Errore nella decodifica GPS: " + error.message);
+                    if (!isVocale) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                    }
+                });
+
+            }, function(error) {
+                mostraErrore("Per favore, abilita la localizzazione GPS sul tuo dispositivo.");
+                if (!isVocale) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            }, {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0
+            });
+        }
+
+        // LOGICA DI ASCOLTO VOCALE PER LA META DEL GUIDATORE
+        function avviaAscoltoMeta() {
+            if (!riconoscimentoVocale) {
+                mostraErrore("Riconoscimento vocale non supportato o non autorizzato.");
+                resetGraficaVocale();
+                return;
+            }
+
+            // Suona il bip per segnalare l'inizio dell'ascolto vocale
+            suonaBip();
+
+            impostaStatoVocale("Ti sto ascoltando...", "bg-red-600 voice-active", "fa-solid fa-microphone-lines");
+            
+            riconoscimentoVocale.onstart = function() {
+                console.log("Riconoscimento vocale avviato.");
+            };
+
+            riconoscimentoVocale.onresult = function(event) {
+                var metaPronunciata = event.results[0][0].transcript;
+                metaPronunciata = metaPronunciata.replace(/^(verso|a|diretto a|andiamo a)\s+/gi, "").trim();
+                
+                document.getElementById('meta').value = metaPronunciata;
+                flashField('meta');
+
+                var fraseConferma = "Ricevuto: meta " + metaPronunciata + ". Avvio la ricerca delle osterie tipiche.";
+                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
+                
+                parla(fraseConferma, function() {
+                    form.dispatchEvent(new Event('submit'));
+                });
+            };
+
+            // Riconoscimento errori con diagnostica dettagliata
+            riconoscimentoVocale.onerror = function(event) {
+                console.error("Errore riconoscimento:", event.error);
+                
+                var dettaglioErrore = "Non ho capito la meta.";
+                if (event.error === 'no-speech') {
+                    dettaglioErrore = "Nessuna meta pronunciata rilevata. Riprova con la digitazione manuale.";
+                } else if (event.error === 'aborted') {
+                    dettaglioErrore = "Riconoscimento vocale interrotto o disturbato. Riprova.";
+                } else if (event.error === 'not-allowed') {
+                    dettaglioErrore = "Permesso negato. Google Apps Script blocca il microfono negli iframe di test. Salva il file index.html in locale o scrivi prima la meta per procedere.";
+                } else {
+                    dettaglioErrore = "Errore vocale (" + event.error + "). Inserisci la meta a mano.";
+                }
+                
+                mostraErrore(dettaglioErrore);
+                resetGraficaVocale();
+            };
+
+            riconoscimentoVocale.onend = function() {
+                console.log("Riconoscimento vocale terminato.");
+            };
+
+            try {
+                riconoscimentoVocale.start();
+            } catch (err) {
+                console.log("Errore nell'avvio del microfono: " + err.message);
+            }
+        }
+
+        // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA DEL MICROFONO
+        document.getElementById('btn-voice-start').addEventListener('click', function() {
+            sintesiVocale.cancel(); // Silenzia letture in corso
+            
+            var metaInseritaAmano = document.getElementById('meta').value.trim();
+            
+            // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi" (Bypassa totalmente la richiesta microfono!)
+            if (metaInseritaAmano !== "") {
+                modalitaVocaleAttiva = true;
+                impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid = fa-location-arrow");
+                
+                parla("Meta impostata: " + metaInseritaAmano + ". Avvio localizzazione GPS.", function() {
+                    rilevaGPS(true);
+                });
+                return; 
+            }
+            
+            // SE LA META È VUOTA: Flusso standard con controllo preventivo del microfono
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                mostraErrore("Riconoscimento vocale o microfono non supportati su questo browser.");
+                return;
+            }
+            
+            impostaStatoVocale("Verifica microfono...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    stream.getTracks().forEach(function(track) { track.stop(); }); // Chiudiamo subito il test audio
+                    
+                    modalitaVocaleAttiva = true;
+                    impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");
+                    
+                    parla("Avvio localizzazione GPS. Attendi un momento.", function() {
+                        rilevaGPS(true);
+                    });
+                })
+                .catch(function(error) {
+                    console.error("Verifica microfono fallita:", error);
+                    var erroreDettaglio = "Permesso microfono negato.";
+                    
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        erroreDettaglio = "Permesso negato. Abilita il microfono nelle impostazioni del browser, oppure scrivi prima la Meta per usare l'app in sola riproduzione vocale.";
+                    } else {
+                        erroreDettaglio = "Impossibile accedere al microfono: " + error.message;
+                    }
+                    
+                    mostraErrore(erroreDettaglio);
+                    resetGraficaVocale();
+                });
+        });
+
+        function impostaStatoVocale(titolo, classiSfondo, classiIcona) {
+            document.getElementById('voice-status-title').textContent = titolo;
+            var container = document.getElementById('voice-icon-container');
+            container.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 " + classiSfondo;
+            
+            var icon = document.getElementById('voice-icon');
+            icon.className = classiIcona;
+        }
+
+        function resetGraficaVocale() {
+            modalitaVocaleAttiva = false;
+            impostaStatoVocale("Copilota Vocale Attivo", "bg-amber-500 text-gray-950", "fa-solid fa-microphone");
+        }
+
+        function flashField(id) {
+            var field = document.getElementById(id);
+            if (field) {
+                field.classList.add('bg-amber-500/10', 'border-amber-500');
+                setTimeout(function() {
+                    field.classList.remove('bg-amber-500/10', 'border-amber-500');
+                }, 1500);
+            }
+        }
+    </script>
+</body>
+</html>
