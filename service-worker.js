@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sostagourmet-v3'; // Incrementa questo numero (v2, v3...) quando fai modifiche sostanziali all'HTML
+const CACHE_NAME = 'sostagourmet-v4'; // Incrementa questo numero (v2, v3...) quando fai modifiche sostanziali all'HTML
 const ASSETS = [
   './index.html',
   './manifest.json',
