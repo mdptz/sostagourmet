@@ -12,6 +12,8 @@
   gtag('config', 'G-DV0Q2T1WHH');
 </script>
 
+  <link rel="manifest" href="manifest.json">
+  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SostaGourmet - Osterie al Casello</title>
@@ -811,6 +813,20 @@
                 }, 1500);
             }
         }
+
+// Registrazione del Service Worker per abilitare la PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('https://mdptz.github.io/sostagourmet/service-worker.js')
+        .then(function(reg) {
+            console.log('Service Worker registrato con successo!', reg.scope);
+        })
+        .catch(function(err) {
+            console.log('Errore nella registrazione del Service Worker:', err);
+        });
+    });
+}
+      
     </script>
 </body>
 </html>
