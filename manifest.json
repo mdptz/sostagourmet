@@ -1,0 +1,17 @@
+{
+  "name": "SostaGourmet",
+  "short_name": "SostaGourmet",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/isometric/512/car.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
