@@ -191,7 +191,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-[10px] text-gray-650 py-2 mt-4">
+    <footer class="text-center text-[10px] text-gray-655 py-2 mt-4">
         SostaGourmet © 2026 - by mdptz
     </footer>
 
@@ -232,24 +232,24 @@
         // Flag per capire se il microfono è in ascolto attivo in questo momento
         var isListeningForMeta = false;
 
-        // Attiva i rilevatori per silenziare l'applicazione immediatamente alla chiusura[cite: 2]
+        // Attiva i rilevatori per silenziare l'applicazione immediatamente alla chiusura
         window.addEventListener('beforeunload', function() {
             isUnloading = true;
-            silenziaTutto();[cite: 2]
+            silenziaTutto();
         });
         window.addEventListener('pagehide', function() {
             isUnloading = true;
-            silenziaTutto();[cite: 2]
+            silenziaTutto();
         });
 
         function silenziaTutto() {
-            isListeningForMeta = false;[cite: 2]
-            modalitaVocaleAttiva = false;[cite: 2]
+            isListeningForMeta = false;
+            modalitaVocaleAttiva = false;
             if (sintesiVocale) {
-                try { sintesiVocale.cancel(); } catch(e) {}[cite: 2]
+                try { sintesiVocale.cancel(); } catch(e) {}
             }
             if (riconoscimentoVocale) {
-                try { riconoscimentoVocale.abort(); } catch(e) {}[cite: 2]
+                try { riconoscimentoVocale.abort(); } catch(e) {}
             }
         }
 
@@ -266,273 +266,273 @@
             riconoscimentoVocale.maxAlternatives = 1;
         }
 
-        // Funzione per sbloccare l'hardware audio mobile in modo sincrono al tocco del pulsante[cite: 2]
+        // Funzione per sbloccare l'hardware audio mobile in modo sincrono al tocco del pulsante
         function sbloccaAudioSito() {
-            if (isUnloading) return;[cite: 2]
-            // 1. Sblocca la sintesi vocale (iOS Safari) inviando un testo vuoto e silenzioso[cite: 2]
+            if (isUnloading) return;
+            // 1. Sblocca la sintesi vocale (iOS Safari) inviando un testo vuoto e silenzioso
             if (sintesiVocale) {
-                var sblocco = new SpeechSynthesisUtterance("");[cite: 2]
-                sblocco.volume = 0;[cite: 2]
-                sblocco.lang = 'it-IT';[cite: 2]
-                sintesiVocale.speak(sblocco);[cite: 2]
+                var sblocco = new SpeechSynthesisUtterance("");
+                sblocco.volume = 0;
+                sblocco.lang = 'it-IT';
+                sintesiVocale.speak(sblocco);
             }
-            // 2. Crea o riattiva l'AudioContext per riprodurre il BIP senza blocchi[cite: 2]
+            // 2. Crea o riattiva l'AudioContext per riprodurre il BIP senza blocchi
             try {
                 if (!globalAudioCtx) {
-                    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();[cite: 2]
+                    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 if (globalAudioCtx.state === 'suspended') {
-                    globalAudioCtx.resume();[cite: 2]
+                    globalAudioCtx.resume();
                 }
-                // Breve impulso di test muto per forzare l'attivazione hardware[cite: 2]
-                var buffer = globalAudioCtx.createBuffer(1, 1, 22050);[cite: 2]
-                var source = globalAudioCtx.createBufferSource();[cite: 2]
-                source.buffer = buffer;[cite: 2]
-                source.connect(globalAudioCtx.destination);[cite: 2]
-                source.start(0);[cite: 2]
+                // Breve impulso di test muto per forzare l'attivazione hardware
+                var buffer = globalAudioCtx.createBuffer(1, 1, 22050);
+                var source = globalAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(globalAudioCtx.destination);
+                source.start(0);
             } catch (e) {
-                console.log("AudioContext non sbloccabile in questo browser:", e);[cite: 2]
+                console.log("AudioContext non sbloccabile in questo browser:", e);
             }
         }
 
-        // Genera il bip acustico usando il canale precedentemente sbloccato[cite: 2]
+        // Genera il bip acustico usando il canale precedentemente sbloccato
         function suonaBip() {
-            if (isUnloading) return;[cite: 2]
+            if (isUnloading) return;
             try {
-                var ctx = globalAudioCtx || new (window.AudioContext || window.webkitAudioContext)();[cite: 2]
+                var ctx = globalAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
                 if (ctx.state === 'suspended') {
-                    ctx.resume();[cite: 2]
+                    ctx.resume();
                 }
-                var oscillator = ctx.createOscillator();[cite: 2]
-                var gainNode = ctx.createGain();[cite: 2]
+                var oscillator = ctx.createOscillator();
+                var gainNode = ctx.createGain();
                 
-                oscillator.type = 'sine';[cite: 2]
-                oscillator.frequency.setValueAtTime(800, ctx.currentTime); // 800Hz[cite: 2]
-                gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // Volume basso[cite: 2]
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, ctx.currentTime); // 800Hz
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // Volume basso
                 
-                oscillator.connect(gainNode);[cite: 2]
-                gainNode.connect(ctx.destination);[cite: 2]
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
                 
-                oscillator.start();[cite: 2]
-                oscillator.stop(ctx.currentTime + 0.15); // Dura 150ms[cite: 2]
+                oscillator.start();
+                oscillator.stop(ctx.currentTime + 0.15); // Dura 150ms
             } catch (e) {
-                console.log("Impossibile suonare il bip acustico:", e);[cite: 2]
+                console.log("Impossibile suonare il bip acustico:", e);
             }
         }
 
-        // Funzione per far parlare il dispositivo[cite: 2]
+        // Funzione per far parlare il dispositivo
         function parla(testo, onEndCallback) {
-            if (isUnloading) return;[cite: 2]
+            if (isUnloading) return;
             if (!sintesiVocale) {
-                if (onEndCallback) onEndCallback();[cite: 2]
+                if (onEndCallback) onEndCallback();
                 return;
             }
-            sintesiVocale.cancel(); // Silenzia letture precedenti[cite: 2]
-            var u = new SpeechSynthesisUtterance(testo);[cite: 2]
-            u.lang = 'it-IT';[cite: 2]
-            u.rate = 1.0;[cite: 2]
+            sintesiVocale.cancel(); // Silenzia letture precedenti
+            var u = new SpeechSynthesisUtterance(testo);
+            u.lang = 'it-IT';
+            u.rate = 1.0;
             if (onEndCallback) {
-                u.onend = onEndCallback;[cite: 2]
+                u.onend = onEndCallback;
             }
-            sintesiVocale.speak(u);[cite: 2]
+            sintesiVocale.speak(u);
         }
 
         /**
-         * Gestisce la comunicazione unificata tra Apps Script interno ed esterno (GitHub fetch)[cite: 2]
+         * Gestisce la comunicazione unificata tra Apps Script interno ed esterno (GitHub fetch)
          */
         function inviaDatiAlServer(azione, dati, onSuccess, onFailure) {
-            if (typeof google !== 'undefined' && google.script && google.script.run) {[cite: 2]
-                if (azione === "chiamaGemini") {[cite: 2]
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                if (azione === "chiamaGemini") {
                     google.script.run
                         .withSuccessHandler(onSuccess)
                         .withFailureHandler(onFailure)
-                        .chiamaGemini(dati);[cite: 2]
-                } else if (azione === "rilevaPosizione") {[cite: 2]
+                        .chiamaGemini(dati);
+                } else if (azione === "rilevaPosizione") {
                     google.script.run
                         .withSuccessHandler(onSuccess)
                         .withFailureHandler(onFailure)
-                        .rilevaPosizioneAutostrada(dati.lat, dati.lon);[cite: 2]
+                        .rilevaPosizioneAutostrada(dati.lat, dati.lon);
                 }
             } else {
-                if (APPS_SCRIPT_URL === "" || APPS_SCRIPT_URL.indexOf("INSERISCI_QUI") !== -1) {[cite: 2]
-                    onFailure({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });[cite: 2]
+                if (APPS_SCRIPT_URL === "" || APPS_SCRIPT_URL.indexOf("INSERISCI_QUI") !== -1) {
+                    onFailure({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });
                     return;
                 }
                 
-                var payloadPost = { action: azione };[cite: 2]
-                if (azione === "chiamaGemini") {[cite: 2]
-                    payloadPost.datiViaggio = dati;[cite: 2]
-                } else if (azione === "rilevaPosizione") {[cite: 2]
-                    payloadPost.lat = dati.lat;[cite: 2]
-                    payloadPost.lon = dati.lon;[cite: 2]
+                var payloadPost = { action: azione };
+                if (azione === "chiamaGemini") {
+                    payloadPost.datiViaggio = dati;
+                } else if (azione === "rilevaPosizione") {
+                    payloadPost.lat = dati.lat;
+                    payloadPost.lon = dati.lon;
                 }
 
                 fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'cors',
-                    headers: { 'Content-Type': 'text/plain' },[cite: 2]
-                    body: JSON.stringify(payloadPost)[cite: 2]
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payloadPost)
                 })
-                .then(function(res) { return res.json(); })[cite: 2]
+                .then(function(res) { return res.json(); })
                 .then(function(data) {
-                    if (data && data.error) {[cite: 2]
-                        onFailure({ message: data.error });[cite: 2]
+                    if (data && data.error) {
+                        onFailure({ message: data.error });
                     } else {
-                        onSuccess(data);[cite: 2]
+                        onSuccess(data);
                     }
                 })
                 .catch(function(err) {
-                    onFailure({ message: "Errore di connessione con il server API: " + err.message });[cite: 2]
+                    onFailure({ message: "Errore di connessione con il server API: " + err.message });
                 });
             }
         }
 
-        // Invia i dati al server[cite: 2]
+        // Invia i dati al server
         form.addEventListener('submit', function(e) {
-            if (e) e.preventDefault();[cite: 2]
+            if (e) e.preventDefault();
 
-            appContent.classList.add('hidden');[cite: 2]
-            loading.classList.remove('hidden');[cite: 2]
+            appContent.classList.add('hidden');
+            loading.classList.remove('hidden');
 
             var datiViaggio = {
-                autostrada: document.getElementById('autostrada').value,[cite: 2]
-                meta: document.getElementById('meta').value,[cite: 2]
-                ultimoCasello: document.getElementById('ultimoCasello').value,[cite: 2]
-                tempoAllaSosta: document.getElementById('tempoAllaSosta').value,[cite: 2]
-                distanzaMaxCasello: document.getElementById('distanzaMaxCasello').value,[cite: 2]
-                budget: document.getElementById('budget').value[cite: 2]
+                autostrada: document.getElementById('autostrada').value,
+                meta: document.getElementById('meta').value,
+                ultimoCasello: document.getElementById('ultimoCasello').value,
+                tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
+                distanzaMaxCasello: document.getElementById('distanzaMaxCasello').value,
+                budget: document.getElementById('budget').value
             };
 
-            inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);[cite: 2]
+            inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
         });
 
-        // Mostra a schermo l'errore in modo amichevole[cite: 2]
+        // Mostra a schermo l'errore in modo amichevole
         function mostraErrore(messaggio) {
-            if (isUnloading) return; // Non mostrare errori se l'utente sta lasciando l'app[cite: 2]
-            var banner = document.getElementById('error-banner');[cite: 2]
-            document.getElementById('error-text').textContent = messaggio;[cite: 2]
-            banner.classList.remove('hidden');[cite: 2]
+            if (isUnloading) return; // Non mostrare errori se l'utente sta lasciando l'app
+            var banner = document.getElementById('error-banner');
+            document.getElementById('error-text').textContent = messaggio;
+            banner.classList.remove('hidden');
             setTimeout(function() {
-                banner.classList.add('hidden');[cite: 2]
+                banner.classList.add('hidden');
             }, 6000);
             if (modalitaVocaleAttiva) {
-                parla("Si è verificato un errore: " + messaggio);[cite: 2]
+                parla("Si è verificato un errore: " + messaggio);
             }
         }
 
-        // Gestione del successo[cite: 2]
+        // Gestione del successo
         function onSuccess(data) {
-            if (isUnloading) return;[cite: 2]
-            if (!data.ristoranti || data.ristoranti.length === 0) {[cite: 2]
-                onFailure({ message: "Nessun ristorante valido restituito." });[cite: 2]
+            if (isUnloading) return;
+            if (!data.ristoranti || data.ristoranti.length === 0) {
+                onFailure({ message: "Nessun ristorante valido restituito." });
                 return;
             }
 
-            document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();[cite: 2]
-            ristorantiTrovati = data.ristoranti;[cite: 2]
+            document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();
+            ristorantiTrovati = data.ristoranti;
 
             for (var i = 0; i < 3; i++) {
-                var tab = document.getElementById('tab-' + i);[cite: 2]
+                var tab = document.getElementById('tab-' + i);
                 if (tab && ristorantiTrovati[i]) {
-                    tab.textContent = ristorantiTrovati[i].nomeRistorante.substring(0, 12) + (ristorantiTrovati[i].nomeRistorante.length > 12 ? '..' : '');[cite: 2]
+                    tab.textContent = ristorantiTrovati[i].nomeRistorante.substring(0, 12) + (ristorantiTrovati[i].nomeRistorante.length > 12 ? '..' : '');
                 }
             }
 
-            loading.classList.add('hidden');[cite: 2]
-            risultato.classList.remove('hidden');[cite: 2]
+            loading.classList.add('hidden');
+            risultato.classList.remove('hidden');
 
-            aggiornaMappa();[cite: 2]
-            mostraRistorante(0);[cite: 2]
+            aggiornaMappa();
+            mostraRistorante(0);
 
             if (modalitaVocaleAttiva) {
-                var primoRisto = ristorantiTrovati[0];[cite: 2]
-                var piattiTesto = primoRisto.piattiConsigliati ? primoRisto.piattiConsigliati.join(" e ") : "specialità tipiche";[cite: 2]
+                var primoRisto = ristorantiTrovati[0];
+                var piattiTesto = primoRisto.piattiConsigliati ? primoRisto.piattiConsigliati.join(" e ") : "specialità tipiche";
                 
-                var testoRisultato = "Ho trovato tre osterie fantastiche sul tuo percorso. " +[cite: 2]
-                    "Ti consiglio di uscire al casello di " + data.caselloConsigliato + ". " +[cite: 2]
-                    "La sosta migliore è l'osteria " + primoRisto.nomeRistorante + ", situata a soli " + primoRisto.tempoDalCasello + " minuti dall'uscita. " +[cite: 2]
-                    "Prezzo medio stimato a testa: " + primoRisto.prezzoMedioStimato + ". " +[cite: 2]
-                    "I piatti consigliati sono: " + piattiTesto + ". " +[cite: 2]
-                    "Buon appetito e prudenza alla guida!";[cite: 2]
+                var testoRisultato = "Ho trovato tre osterie fantastiche sul tuo percorso. " +
+                    "Ti consiglio di uscire al casello di " + data.caselloConsigliato + ". " +
+                    "La sosta migliore è l'osteria " + primoRisto.nomeRistorante + ", situata a soli " + primoRisto.tempoDalCasello + " minuti dall'uscita. " +
+                    "Prezzo medio stimato a testa: " + primoRisto.prezzoMedioStimato + ". " +
+                    "I piatti consigliati sono: " + piattiTesto + ". " +
+                    "Buon appetito e prudenza alla guida!";
                 
-                // Disattiva e spegne la modalità vocale non appena l'assistente finisce di parlare[cite: 2]
+                // Disattiva e spegne la modalità vocale non appena l'assistente finisce di parlare
                 parla(testoRisultato, function() {
-                    resetGraficaVocale();[cite: 2]
+                    resetGraficaVocale();
                 });
             }
         }
 
         function onFailure(error) {
-            if (isUnloading) return;[cite: 2]
-            mostraErrore("Errore: " + error.message);[cite: 2]
-            loading.classList.add('hidden');[cite: 2]
-            appContent.classList.remove('hidden');[cite: 2]
-            resetGraficaVocale();[cite: 2]
+            if (isUnloading) return;
+            mostraErrore("Errore: " + error.message);
+            loading.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            resetGraficaVocale();
         }
 
-        // Funzione per compilare i dettagli dell'opzione selezionata[cite: 2]
+        // Funzione per compilare i dettagli dell'opzione selezionata
         function mostraRistorante(indice) {
-            if (isUnloading) return;[cite: 2]
-            var ristorante = ristorantiTrovati[indice];[cite: 2]
-            if (!ristorante) return;[cite: 2]
+            if (isUnloading) return;
+            var ristorante = ristorantiTrovati[indice];
+            if (!ristorante) return;
 
             for (var i = 0; i < 3; i++) {
-                var tab = document.getElementById('tab-' + i);[cite: 2]
+                var tab = document.getElementById('tab-' + i);
                 if (i === indice) {
-                    tab.className = "py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200 font-bold";[cite: 2]
+                    tab.className = "py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200 font-bold";
                 } else {
-                    tab.className = "py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold";[cite: 2]
+                    tab.className = "py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold";
                 }
             }
 
-            document.getElementById('res-nome').textContent = ristorante.nomeRistorante;[cite: 2]
-            document.getElementById('res-indirizzo').textContent = ristorante.indirizzo;[cite: 2]
-            document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + ristorante.tempoDalCasello + ' minuti dal casello';[cite: 2]
-            document.getElementById('res-descrizione').textContent = ristorante.percheMerita;[cite: 2]
-            document.getElementById('res-prezzo').textContent = ristorante.prezzoMedioStimato || "Sotto i 30€";[cite: 2]
+            document.getElementById('res-nome').textContent = ristorante.nomeRistorante;
+            document.getElementById('res-indirizzo').textContent = ristorante.indirizzo;
+            document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + ristorante.tempoDalCasello + ' minuti dal casello';
+            document.getElementById('res-descrizione').textContent = ristorante.percheMerita;
+            document.getElementById('res-prezzo').textContent = ristorante.prezzoMedioStimato || "Sotto i 30€";
 
-            var listaPiatti = document.getElementById('res-piatti');[cite: 2]
-            listaPiatti.innerHTML = '';[cite: 2]
-            if (ristorante.piattiConsigliati) {[cite: 2]
-                ristorante.piattiConsigliati.forEach(function(piatto) {[cite: 2]
-                    var li = document.createElement('li');[cite: 2]
-                    li.textContent = piatto;[cite: 2]
-                    listaPiatti.appendChild(li);[cite: 2]
+            var listaPiatti = document.getElementById('res-piatti');
+            listaPiatti.innerHTML = '';
+            if (ristorante.piattiConsigliati) {
+                ristorante.piattiConsigliati.forEach(function(piatto) {
+                    var li = document.createElement('li');
+                    li.textContent = piatto;
+                    listaPiatti.appendChild(li);
                 });
             }
 
-            document.getElementById('btn-chiama').href = 'tel:' + ristorante.telefono;[cite: 2]
-            var queryMappa = encodeURIComponent(ristorante.nomeRistorante + ' ' + ristorante.indirizzo);[cite: 2]
-            document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;[cite: 2]
+            document.getElementById('btn-chiama').href = 'tel:' + ristorante.telefono;
+            var queryMappa = encodeURIComponent(ristorante.nomeRistorante + ' ' + ristorante.indirizzo);
+            document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;
 
-            if (mappaApp && markerLayers[indice]) {[cite: 2]
-                mappaApp.setView([ristorante.lat, ristorante.lng], 14);[cite: 2]
-                markerLayers[indice].openPopup();[cite: 2]
+            if (mappaApp && markerLayers[indice]) {
+                mappaApp.setView([ristorante.lat, ristorante.lng], 14);
+                markerLayers[indice].openPopup();
             }
         }
 
         function aggiornaMappa() {
-            if (isUnloading) return;[cite: 2]
-            if (!mappaApp) {[cite: 2]
+            if (isUnloading) return;
+            if (!mappaApp) {
                 mappaApp = L.map('map', {
                     zoomControl: false 
-                }).setView([ristorantiTrovati[0].lat, ristorantiTrovati[0].lng], 12);[cite: 2]
+                }).setView([ristorantiTrovati[0].lat, ristorantiTrovati[0].lng], 12);
 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(mappaApp);[cite: 2]
+                }).addTo(mappaApp);
             }
 
             setTimeout(function() {
-                if (mappaApp) mappaApp.invalidateSize();[cite: 2]
+                if (mappaApp) mappaApp.invalidateSize();
             }, 100);
 
             markerLayers.forEach(function(marker) {
-                if (mappaApp) mappaApp.removeLayer(marker);[cite: 2]
+                if (mappaApp) mappaApp.removeLayer(marker);
             });
-            markerLayers = [];[cite: 2]
+            markerLayers = [];
 
-            var creaIconaCustom = function(numero) {[cite: 2]
+            var creaIconaCustom = function(numero) {
                 return L.divIcon({
                     html: '<div class="bg-amber-500 text-gray-950 font-black rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-xl text-sm">' + numero + '</div>',
                     className: 'custom-div-icon',
@@ -541,115 +541,115 @@
                 });
             };
 
-            var bounds = [];[cite: 2]
+            var bounds = [];
 
-            ristorantiTrovati.forEach(function(ristorante, indice) {[cite: 2]
+            ristorantiTrovati.forEach(function(ristorante, indice) {
                 var marker = L.marker([ristorante.lat, ristorante.lng], {
                     icon: creaIconaCustom(indice + 1)
-                }).addTo(mappaApp);[cite: 2]
+                }).addTo(mappaApp);
 
-                marker.bindPopup("<b class='text-gray-900'>" + ristorante.nomeRistorante + "</b><br><span class='text-xs text-gray-650'>" + ristorante.indirizzo + "</span>");[cite: 2]
+                marker.bindPopup("<b class='text-gray-900'>" + ristorante.nomeRistorante + "</b><br><span class='text-xs text-gray-650'>" + ristorante.indirizzo + "</span>");
                 
                 marker.on('click', function() {
-                    mostraRistorante(indice);[cite: 2]
+                    mostraRistorante(indice);
                 });
 
-                markerLayers.push(marker);[cite: 2]
-                bounds.push([ristorante.lat, ristorante.lng]);[cite: 2]
+                markerLayers.push(marker);
+                bounds.push([ristorante.lat, ristorante.lng]);
             });
 
-            if (bounds.length > 0 && mappaApp) {[cite: 2]
-                mappaApp.fitBounds(bounds, { padding: [40, 40] });[cite: 2]
+            if (bounds.length > 0 && mappaApp) {
+                mappaApp.fitBounds(bounds, { padding: [40, 40] });
             }
         }
 
         document.getElementById('btn-reset').addEventListener('click', function() {
-            risultato.classList.add('hidden');[cite: 2]
-            appContent.classList.remove('hidden');[cite: 2]
-            resetGraficaVocale();[cite: 2]
+            risultato.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            resetGraficaVocale();
         });
 
         document.getElementById('btn-gps').addEventListener('click', function() {
-            rilevaGPS(false);[cite: 2]
+            rilevaGPS(false);
         });
 
-        // FUNZIONE UNIFICATA RILEVAMENTO GPS[cite: 2]
+        // FUNZIONE UNIFICATA RILEVAMENTO GPS
         function rilevaGPS(isVocale) {
-            var btn = document.getElementById('btn-gps');[cite: 2]
-            var originalContent = btn.innerHTML;[cite: 2]
+            var btn = document.getElementById('btn-gps');
+            var originalContent = btn.innerHTML;
             
             if (!isVocale) {
-                btn.disabled = true;[cite: 2]
-                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Rilevo...';[cite: 2]
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Rilevo...';
             }
 
             if (!navigator.geolocation) {
-                mostraErrore("La geolocalizzazione non è supportata dal browser.");[cite: 2]
+                mostraErrore("La geolocalizzazione non è supportata dal browser.");
                 if (!isVocale) {
-                    btn.disabled = false;[cite: 2]
-                    btn.innerHTML = originalContent;[cite: 2]
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
                 }
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(function(position) {
-                var lat = position.coords.latitude;[cite: 2]
-                var lon = position.coords.longitude;[cite: 2]
+                var lat = position.coords.latitude;
+                var lon = position.coords.longitude;
 
-                var payloadGPS = { lat: lat, lon: lon };[cite: 2]
+                var payloadGPS = { lat: lat, lon: lon };
 
                 inviaDatiAlServer("rilevaPosizione", payloadGPS, function(data) {
-                    if (isUnloading) return;[cite: 2]
-                    if (data && data.autostrada) {[cite: 2]
-                        document.getElementById('autostrada').value = data.autostrada;[cite: 2]
-                        document.getElementById('ultimoCasello').value = data.ultimoCasello;[cite: 2]
-                        flashField('autostrada');[cite: 2]
-                        flashField('ultimoCasello');[cite: 2]
+                    if (isUnloading) return;
+                    if (data && data.autostrada) {
+                        document.getElementById('autostrada').value = data.autostrada;
+                        document.getElementById('ultimoCasello').value = data.ultimoCasello;
+                        flashField('autostrada');
+                        flashField('ultimoCasello');
 
                         if (isVocale) {
-                            var metaGiaInserita = document.getElementById('meta').value.trim();[cite: 2]
-                            if (metaGiaInserita !== "") {[cite: 2]
-                                var fraseConferma = "Posizione rilevata sulla " + data.autostrada + [cite: 2]
-                                    " all'altezza di " + data.ultimoCasello + ". Avvio la ricerca delle osterie verso " + metaGiaInserita + ".";[cite: 2]
+                            var metaGiaInserita = document.getElementById('meta').value.trim();
+                            if (metaGiaInserita !== "") {
+                                var fraseConferma = "Posizione rilevata sulla " + data.autostrada + 
+                                    " all'altezza di " + data.ultimoCasello + ". Avvio la ricerca delle osterie verso " + metaGiaInserita + ".";
                                 
-                                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");[cite: 2]
+                                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
                                 parla(fraseConferma, function() {
-                                    form.dispatchEvent(new Event('submit'));[cite: 2]
+                                    form.dispatchEvent(new Event('submit'));
                                 });
                             } else {
-                                var fraseDomanda = "Posizione rilevata sulla " + data.autostrada + [cite: 2]
-                                    " all'altezza di " + data.ultimoCasello + ". Pronuncia la tua meta dopo il bip.";[cite: 2]
+                                var fraseDomanda = "Posizione rilevata sulla " + data.autostrada + 
+                                    " all'altezza di " + data.ultimoCasello + ". Pronuncia la tua meta dopo il bip.";
                                 
-                                impostaStatoVocale("Sto parlando...", "bg-blue-600 animate-pulse", "fa-solid fa-volume-high");[cite: 2]
+                                impostaStatoVocale("Sto parlando...", "bg-blue-600 animate-pulse", "fa-solid fa-volume-high");
                                 parla(fraseDomanda, function() {
                                     setTimeout(function() {
-                                        avviaAscoltoMeta();[cite: 2]
+                                        avviaAscoltoMeta();
                                     }, 1200);
                                 });
                             }
                         }
                     } else {
-                        mostraErrore("Non sono riuscito ad agganciare l'autostrada. Assicurati di essere in autostrada!");[cite: 2]
+                        mostraErrore("Non sono riuscito ad agganciare l'autostrada. Assicurati di essere in autostrada!");
                     }
                     if (!isVocale) {
-                        btn.disabled = false;[cite: 2]
-                        btn.innerHTML = originalContent;[cite: 2]
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
                     }
                 }, function(error) {
-                    if (isUnloading) return;[cite: 2]
-                    mostraErrore("Errore nella decodifica GPS: " + error.message);[cite: 2]
+                    if (isUnloading) return;
+                    mostraErrore("Errore nella decodifica GPS: " + error.message);
                     if (!isVocale) {
-                        btn.disabled = false;[cite: 2]
-                        btn.innerHTML = originalContent;[cite: 2]
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
                     }
                 });
 
             }, function(error) {
-                if (isUnloading) return;[cite: 2]
-                mostraErrore("Per favore, abilita la localizzazione GPS sul tuo dispositivo.");[cite: 2]
+                if (isUnloading) return;
+                mostraErrore("Per favore, abilita la localizzazione GPS sul tuo dispositivo.");
                 if (!isVocale) {
-                    btn.disabled = false;[cite: 2]
-                    btn.innerHTML = originalContent;[cite: 2]
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
                 }
             }, {
                 enableHighAccuracy: true,
@@ -658,175 +658,174 @@
             });
         }
 
-        // LOGICA DI ASCOLTO VOCALE PER LA META DEL GUIDATORE[cite: 2]
+        // LOGICA DI ASCOLTO VOCALE PER LA META DEL GUIDATORE
         function avviaAscoltoMeta() {
-            if (isUnloading) return;[cite: 2]
+            if (isUnloading) return;
             if (!riconoscimentoVocale) {
-                mostraErrore("Riconoscimento vocale non supportato o non autorizzato.");[cite: 2]
-                resetGraficaVocale();[cite: 2]
+                mostraErrore("Riconoscimento vocale non supportato o non autorizzato.");
+                resetGraficaVocale();
                 return;
             }
 
-            suonaBip();[cite: 2]
+            suonaBip();
 
-            isListeningForMeta = true; // Impostiamo lo stato di ascolto attivo![cite: 2]
-            impostaStatoVocale("Ti sto ascoltando...", "bg-red-600 voice-active", "fa-solid fa-microphone-lines");[cite: 2]
+            isListeningForMeta = true; // Impostiamo lo stato di ascolto attivo!
+            impostaStatoVocale("Ti sto ascoltando...", "bg-red-600 voice-active", "fa-solid fa-microphone-lines");
             
             riconoscimentoVocale.onstart = function() {
-                console.log("Riconoscimento vocale avviato.");[cite: 2]
+                console.log("Riconoscimento vocale avviato.");
             };
 
             riconoscimentoVocale.onresult = function(event) {
-                if (isUnloading) return;[cite: 2]
-                isListeningForMeta = false; // Ascolto completato con successo[cite: 2]
+                if (isUnloading) return;
+                isListeningForMeta = false; // Ascolto completato con successo
                 
-                try { riconoscimentoVocale.stop(); } catch(e){}[cite: 2]
+                try { riconoscimentoVocale.stop(); } catch(e){}
 
-                var metaPronunciata = event.results[0][0].transcript;[cite: 2]
-                metaPronunciata = metaPronunciata.replace(/^(verso|a|diretto a|andiamo a)\s+/gi, "").trim();[cite: 2]
+                var metaPronunciata = event.results[0][0].transcript;
+                metaPronunciata = metaPronunciata.replace(/^(verso|a|diretto a|andiamo a)\s+/gi, "").trim();
                 
-                document.getElementById('meta').value = metaPronunciata;[cite: 2]
-                flashField('meta');[cite: 2]
+                document.getElementById('meta').value = metaPronunciata;
+                flashField('meta');
 
-                var fraseConferma = "Ricevuto: meta " + metaPronunciata + ". Avvio la ricerca delle osterie tipiche.";[cite: 2]
-                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");[cite: 2]
+                var fraseConferma = "Ricevuto: meta " + metaPronunciata + ". Avvio la ricerca delle osterie tipiche.";
+                impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
                 
                 parla(fraseConferma, function() {
-                    form.dispatchEvent(new Event('submit'));[cite: 2]
+                    form.dispatchEvent(new Event('submit'));
                 });
             };
 
             riconoscimentoVocale.onerror = function(event) {
-                // Se l'utente chiude la pagina o non siamo in ascolto attivo, IGNORA l'errore senza generare alert o speech![cite: 2]
-                if (isUnloading || !isListeningForMeta) {[cite: 2]
-                    console.log("Errore ignorato (pagina chiusa o non in ascolto):", event.error);[cite: 2]
+                // Se l'utente chiude la pagina o non siamo in ascolto attivo, IGNORA l'errore senza generare alert o speech!
+                if (isUnloading || !isListeningForMeta) {
+                    console.log("Errore ignorato (pagina chiusa o non in ascolto):", event.error);
                     return;
                 }
                 
-                isListeningForMeta = false;[cite: 2]
-                console.error("Errore riconoscimento:", event.error);[cite: 2]
+                isListeningForMeta = false;
+                console.error("Errore riconoscimento:", event.error);
                 
-                var dettaglioErrore = "Non ho capito la meta.";[cite: 2]
-                if (event.error === 'no-speech') {[cite: 2]
-                    dettaglioErrore = "Nessuna meta pronunciata rilevata. Riprova con la digitazione manuale.";[cite: 2]
-                } else if (event.error === 'aborted') {[cite: 2]
-                    dettaglioErrore = "Riconoscimento vocale interrotto. Riprova.";[cite: 2]
-                } else if (event.error === 'not-allowed') {[cite: 2]
-                    dettaglioErrore = "Permesso negato. Google Apps Script blocca il microfono negli iframe di test. Salva il file index.html in locale o scrivi prima la meta per procedere.";[cite: 2]
+                var dettaglioErrore = "Non ho capito la meta.";
+                if (event.error === 'no-speech') {
+                    dettaglioErrore = "Nessuna meta pronunciata rilevata. Riprova con la digitazione manuale.";
+                } else if (event.error === 'aborted') {
+                    dettaglioErrore = "Riconoscimento vocale interrotto. Riprova.";
+                } else if (event.error === 'not-allowed') {
+                    dettaglioErrore = "Permesso negato. Google Apps Script blocca il microfono negli iframe di test. Salva il file index.html in locale o scrivi prima la meta per procedere.";
                 } else {
-                    dettaglioErrore = "Errore vocale (" + event.error + "). Inserisci la meta a mano.";[cite: 2]
+                    dettaglioErrore = "Errore vocale (" + event.error + "). Inserisci la meta a mano.";
                 }
                 
-                mostraErrore(dettaglioErrore);[cite: 2]
-                resetGraficaVocale();[cite: 2]
+                mostraErrore(dettaglioErrore);
+                resetGraficaVocale();
             };
 
             riconoscimentoVocale.onend = function() {
-                isListeningForMeta = false;[cite: 2]
-                console.log("Riconoscimento vocale terminato.");[cite: 2]
+                isListeningForMeta = false;
+                console.log("Riconoscimento vocale terminato.");
             };
 
             try {
-                riconoscimentoVocale.start();[cite: 2]
+                riconoscimentoVocale.start();
             } catch (err) {
-                console.log("Errore nell'avvio del microfono: " + err.message);[cite: 2]
+                console.log("Errore nell'avvio del microfono: " + err.message);
             }
         }
 
-        // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA E SBLOCCO AUDIO SINCRO[cite: 2]
+        // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA E SBLOCCO AUDIO SINCRO
         document.getElementById('btn-voice-start').addEventListener('click', function() {
-            // Sblocca preventivamente la sintesi vocale e l'audio sul browser del telefono (iOS/Android)[cite: 2]
-            sbloccaAudioSito();[cite: 2]
+            // Sblocca preventivamente la sintesi vocale e l'audio sul browser del telefono (iOS/Android)
+            sbloccaAudioSito();
             
-            sintesiVocale.cancel(); // Silenzia letture in corso[cite: 2]
+            sintesiVocale.cancel(); // Silenzia letture in corso
             
-            var metaInseritaAmano = document.getElementById('meta').value.trim();[cite: 2]
+            var metaInseritaAmano = document.getElementById('meta').value.trim();
             
-            // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi" (Bypassa totalmente la richiesta microfono!)[cite: 2]
-            if (metaInseritaAmano !== "") {[cite: 2]
-                modalitaVocaleAttiva = true;[cite: 2]
-                impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");[cite: 2]
+            // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi" (Bypassa totalmente la richiesta microfono!)
+            if (metaInseritaAmano !== "") {
+                modalitaVocaleAttiva = true;
+                impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");
                 
                 parla("Meta impostata: " + metaInseritaAmano + ". Avvio localizzazione GPS.", function() {
-                    rilevaGPS(true);[cite: 2]
+                    rilevaGPS(true);
                 });
                 return; 
             }
             
-            // SE LA META È VUOTA: Flusso standard con controllo preventivo del microfono[cite: 2]
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {[cite: 2]
-                mostraErrore("Riconoscimento vocale o microfono non supportati su questo browser.");[cite: 2]
+            // SE LA META È VUOTA: Flusso standard con controllo preventivo del microfono
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                mostraErrore("Riconoscimento vocale o microfono non supportati su questo browser.");
                 return;
             }
             
-            impostaStatoVocale("Verifica microfono...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");[cite: 2]
+            impostaStatoVocale("Verifica microfono...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
             
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function(stream) {
-                    stream.getTracks().forEach(function(track) { track.stop(); }); // Chiudiamo subito il test audio[cite: 2]
+                    stream.getTracks().forEach(function(track) { track.stop(); }); // Chiudiamo subito il test audio
                     
-                    modalitaVocaleAttiva = true;[cite: 2]
-                    impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");[cite: 2]
+                    modalitaVocaleAttiva = true;
+                    impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");
                     
                     parla("Avvio localizzazione GPS. Attendi un momento.", function() {
-                        rilevaGPS(true);[cite: 2]
+                        rilevaGPS(true);
                     });
                 })
                 .catch(function(error) {
-                    if (isUnloading) return;[cite: 2]
-                    console.error("Verifica microfono fallita:", error);[cite: 2]
-                    var erroreDettaglio = "Permesso microfono negato.";[cite: 2]
+                    if (isUnloading) return;
+                    console.error("Verifica microfono fallita:", error);
+                    var erroreDettaglio = "Permesso microfono negato.";
                     
-                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {[cite: 2]
-                        erroreDettaglio = "Permesso negato. Abilita il microfono nelle impostazioni del browser, oppure scrivi prima la Meta per usare l'app in sola riproduzione vocale.";[cite: 2]
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        erroreDettaglio = "Permesso negato. Abilita il microfono nelle impostazioni del browser, oppure scrivi prima la Meta per usare l'app in sola riproduzione vocale.";
                     } else {
-                        erroreDettaglio = "Impossibile accedere al microfono: " + error.message;[cite: 2]
+                        erroreDettaglio = "Impossibile accedere al microfono: " + error.message;
                     }
                     
-                    mostraErrore(erroreDettaglio);[cite: 2]
-                    resetGraficaVocale();[cite: 2]
+                    mostraErrore(erroreDettaglio);
+                    resetGraficaVocale();
                 });
         });
 
         function impostaStatoVocale(titolo, classiSfondo, classiIcona) {
-            if (isUnloading) return;[cite: 2]
-            document.getElementById('voice-status-title').textContent = titolo;[cite: 2]
-            var container = document.getElementById('voice-icon-container');[cite: 2]
-            container.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 " + classiSfondo;[cite: 2]
+            if (isUnloading) return;
+            document.getElementById('voice-status-title').textContent = titolo;
+            var container = document.getElementById('voice-icon-container');
+            container.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 " + classiSfondo;
             
-            var icon = document.getElementById('voice-icon');[cite: 2]
-            icon.className = classiIcona;[cite: 2]
+            var icon = document.getElementById('voice-icon');
+            icon.className = classiIcona;
         }
 
         function resetGraficaVocale() {
-            if (isUnloading) return;[cite: 2]
-            modalitaVocaleAttiva = false;[cite: 2]
-            impostaStatoVocale("Copilota Vocale Attivo", "bg-amber-500 text-gray-950", "fa-solid fa-microphone");[cite: 2]
+            if (isUnloading) return;
+            modalitaVocaleAttiva = false;
+            impostaStatoVocale("Copilota Vocale Attivo", "bg-amber-500 text-gray-950", "fa-solid fa-microphone");
         }
 
         function flashField(id) {
-            var field = document.getElementById(id);[cite: 2]
+            var field = document.getElementById(id);
             if (field) {
-                field.classList.add('bg-amber-500/10', 'border-amber-500');[cite: 2]
+                field.classList.add('bg-amber-500/10', 'border-amber-500');
                 setTimeout(function() {
-                    field.classList.remove('bg-amber-500/10', 'border-amber-500');[cite: 2]
+                    field.classList.remove('bg-amber-500/10', 'border-amber-500');
                 }, 1500);
             }
         }
 
-// Registrazione del Service Worker per abilitare la PWA
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./service-worker.js')
-        .then(function(reg) {
-            console.log('Service Worker registrato con successo!', reg.scope);
-        })
-        .catch(function(err) {
-            console.log('Errore nella registrazione del Service Worker:', err);
-        });
-    });
-}
-      
+        // Registrazione del Service Worker per abilitare la PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./service-worker.js')
+                .then(function(reg) {
+                    console.log('Service Worker registrato con successo!', reg.scope);
+                })
+                .catch(function(err) {
+                    console.log('Errore nella registrazione del Service Worker:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
