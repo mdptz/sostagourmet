@@ -189,7 +189,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-[10px] text-gray-600 py-2 mt-4">
+    <footer class="text-center text-[10px] text-gray-650 py-2 mt-4">
         SostaGourmet © 2026 - by mdptz
     </footer>
 
@@ -224,6 +224,28 @@
         // Flag per verificare se la ricerca corrente è stata avviata in modalità vocale
         var modalitaVocaleAttiva = false;
 
+        // Flag per rilevare se l'utente sta abbandonando o chiudendo la pagina
+        var isUnloading = false;
+
+        // Attiva i rilevatori per silenziare l'applicazione immediatamente alla chiusura
+        window.addEventListener('beforeunload', function() {
+            isUnloading = true;
+            silenziaTutto();
+        });
+        window.addEventListener('pagehide', function() {
+            isUnloading = true;
+            silenziaTutto();
+        });
+
+        function silenziaTutto() {
+            if (sintesiVocale) {
+                try { sintesiVocale.cancel(); } catch(e) {}
+            }
+            if (riconoscimentoVocale) {
+                try { riconoscimentoVocale.abort(); } catch(e) {}
+            }
+        }
+
         // SISTEMA VOCALE: SINTESI E RICONOSCIMENTO VOCALE NATI
         var sintesiVocale = window.speechSynthesis;
         var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -239,6 +261,7 @@
 
         // Funzione per sbloccare l'hardware audio mobile in modo sincrono al tocco del pulsante
         function sbloccaAudioSito() {
+            if (isUnloading) return;
             // 1. Sblocca la sintesi vocale (iOS Safari) inviando un testo vuoto e silenzioso
             if (sintesiVocale) {
                 var sblocco = new SpeechSynthesisUtterance("");
@@ -267,6 +290,7 @@
 
         // Genera il bip acustico usando il canale precedentemente sbloccato
         function suonaBip() {
+            if (isUnloading) return;
             try {
                 var ctx = globalAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
                 if (ctx.state === 'suspended') {
@@ -291,6 +315,7 @@
 
         // Funzione per far parlare il dispositivo
         function parla(testo, onEndCallback) {
+            if (isUnloading) return;
             if (!sintesiVocale) {
                 if (onEndCallback) onEndCallback();
                 return;
@@ -376,6 +401,7 @@
 
         // Mostra a schermo l'errore in modo amichevole
         function mostraErrore(messaggio) {
+            if (isUnloading) return; // Non mostrare errori se l'utente sta lasciando l'app
             var banner = document.getElementById('error-banner');
             document.getElementById('error-text').textContent = messaggio;
             banner.classList.remove('hidden');
@@ -389,6 +415,7 @@
 
         // Gestione del successo
         function onSuccess(data) {
+            if (isUnloading) return;
             if (!data.ristoranti || data.ristoranti.length === 0) {
                 onFailure({ message: "Nessun ristorante valido restituito." });
                 return;
@@ -426,6 +453,7 @@
         }
 
         function onFailure(error) {
+            if (isUnloading) return;
             mostraErrore("Errore: " + error.message);
             loading.classList.add('hidden');
             appContent.classList.remove('hidden');
@@ -434,6 +462,7 @@
 
         // Funzione per compilare i dettagli dell'opzione selezionata
         function mostraRistorante(indice) {
+            if (isUnloading) return;
             var ristorante = ristorantiTrovati[indice];
             if (!ristorante) return;
 
@@ -473,6 +502,7 @@
         }
 
         function aggiornaMappa() {
+            if (isUnloading) return;
             if (!mappaApp) {
                 mappaApp = L.map('map', {
                     zoomControl: false 
@@ -484,11 +514,11 @@
             }
 
             setTimeout(function() {
-                mappaApp.invalidateSize();
+                if (mappaApp) mappaApp.invalidateSize();
             }, 100);
 
             markerLayers.forEach(function(marker) {
-                mappaApp.removeLayer(marker);
+                if (mappaApp) mappaApp.removeLayer(marker);
             });
             markerLayers = [];
 
@@ -518,7 +548,7 @@
                 bounds.push([ristorante.lat, ristorante.lng]);
             });
 
-            if (bounds.length > 0) {
+            if (bounds.length > 0 && mappaApp) {
                 mappaApp.fitBounds(bounds, { padding: [40, 40] });
             }
         }
@@ -559,6 +589,7 @@
                 var payloadGPS = { lat: lat, lon: lon };
 
                 inviaDatiAlServer("rilevaPosizione", payloadGPS, function(data) {
+                    if (isUnloading) return;
                     if (data && data.autostrada) {
                         document.getElementById('autostrada').value = data.autostrada;
                         document.getElementById('ultimoCasello').value = data.ultimoCasello;
@@ -595,6 +626,7 @@
                         btn.innerHTML = originalContent;
                     }
                 }, function(error) {
+                    if (isUnloading) return;
                     mostraErrore("Errore nella decodifica GPS: " + error.message);
                     if (!isVocale) {
                         btn.disabled = false;
@@ -603,6 +635,7 @@
                 });
 
             }, function(error) {
+                if (isUnloading) return;
                 mostraErrore("Per favore, abilita la localizzazione GPS sul tuo dispositivo.");
                 if (!isVocale) {
                     btn.disabled = false;
@@ -617,6 +650,7 @@
 
         // LOGICA DI ASCOLTO VOCALE PER LA META DEL GUIDATORE
         function avviaAscoltoMeta() {
+            if (isUnloading) return;
             if (!riconoscimentoVocale) {
                 mostraErrore("Riconoscimento vocale non supportato o non autorizzato.");
                 resetGraficaVocale();
@@ -632,6 +666,7 @@
             };
 
             riconoscimentoVocale.onresult = function(event) {
+                if (isUnloading) return;
                 var metaPronunciata = event.results[0][0].transcript;
                 metaPronunciata = metaPronunciata.replace(/^(verso|a|diretto a|andiamo a)\s+/gi, "").trim();
                 
@@ -647,6 +682,7 @@
             };
 
             riconoscimentoVocale.onerror = function(event) {
+                if (isUnloading) return; // Se l'utente chiude il browser, ignora silenziosamente questo errore
                 console.error("Errore riconoscimento:", event.error);
                 
                 var dettaglioErrore = "Non ho capito la meta.";
@@ -715,6 +751,7 @@
                     });
                 })
                 .catch(function(error) {
+                    if (isUnloading) return;
                     console.error("Verifica microfono fallita:", error);
                     var erroreDettaglio = "Permesso microfono negato.";
                     
@@ -729,11 +766,8 @@
                 });
         });
 
-        function impostaStatoVocale(classiSfondo, classiIcona) {
-            // Nota: Se la funzione richiede anche il parametro titolo, usalo se opportuno
-        }
-
         function impostaStatoVocale(titolo, classiSfondo, classiIcona) {
+            if (isUnloading) return;
             document.getElementById('voice-status-title').textContent = titolo;
             var container = document.getElementById('voice-icon-container');
             container.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 " + classiSfondo;
@@ -743,6 +777,7 @@
         }
 
         function resetGraficaVocale() {
+            if (isUnloading) return;
             modalitaVocaleAttiva = false;
             impostaStatoVocale("Copilota Vocale Attivo", "bg-amber-500 text-gray-950", "fa-solid fa-microphone");
         }
