@@ -56,7 +56,7 @@
             </button>
             <!-- Nota informativa sulle modalità d'uso e bypass del microfono -->
             <p class="text-[10px] text-amber-500/60 leading-snug max-w-xs mt-1">
-                <i class="fa-solid fa-lightbulb mr-1"></i> <b>Consiglio per Google Apps Script:</b> Scrivi prima la Meta a mano qui sotto per bypassare l'errore del microfono e ricevere la descrizione vocale dei risultati!
+                <i class="fa-solid fa-lightbulb mr-1"></i> <b>Consiglio:</b> Scrivi prima la Meta a mano qui sotto se vuoi evitare di pronunciare la meta e ricevere la descrizione vocale dei risultati!
             </p>
         </div>
 
@@ -184,7 +184,6 @@
 
     <script>
         // Configura qui la tua URL della Web App di Google Apps Script (ottenuta facendo il Deploy definitivo)
-        // Se usi l'app direttamente dentro Apps Script, puoi lasciare la riga così com'è.
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
         // Gestione degli slider grafici
@@ -218,32 +217,64 @@
         var sintesiVocale = window.speechSynthesis;
         var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         var riconoscimentoVocale = null;
+        var globalAudioCtx = null; // Canale audio sbloccato globale per smartphone
 
         if (SpeechRecognition) {
             riconoscimentoVocale = new SpeechRecognition();
             riconoscimentoVocale.lang = 'it-IT';
             riconoscimentoVocale.interimResults = false;
-            riconoscimentoVococaleMaxAlternatives = 1;
+            riconoscimentoVocale.maxAlternatives = 1;
         }
 
-        // Funzione per generare un bip acustico via browser prima dell'ascolto
+        // Funzione per sbloccare l'hardware audio mobile in modo sincrono al tocco del pulsante
+        function sbloccaAudioSito() {
+            // 1. Sblocca la sintesi vocale (iOS Safari) inviando un testo vuoto e silenzioso
+            if (sintesiVocale) {
+                var sblocco = new SpeechSynthesisUtterance("");
+                sblocco.volume = 0;
+                sblocco.lang = 'it-IT';
+                sintesiVocale.speak(sblocco);
+            }
+            // 2. Crea o riattiva l'AudioContext per riprodurre il BIP senza blocchi
+            try {
+                if (!globalAudioCtx) {
+                    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (globalAudioCtx.state === 'suspended') {
+                    globalAudioCtx.resume();
+                }
+                // Breve impulso di test muto per forzare l'attivazione hardware
+                var buffer = globalAudioCtx.createBuffer(1, 1, 22050);
+                var source = globalAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(globalAudioCtx.destination);
+                source.start(0);
+            } catch (e) {
+                console.log("AudioContext non sbloccabile in questo browser:", e);
+            }
+        }
+
+        // Genera il bip acustico usando il canale precedentemente sbloccato
         function suonaBip() {
             try {
-                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                var oscillator = audioCtx.createOscillator();
-                var gainNode = audioCtx.createGain();
+                var ctx = globalAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                var oscillator = ctx.createOscillator();
+                var gainNode = ctx.createGain();
                 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume moderato
+                oscillator.frequency.setValueAtTime(800, ctx.currentTime); // 800Hz
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // Volume basso
                 
                 oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
+                gainNode.connect(ctx.destination);
                 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15); // Suona per 150 millisecondi
+                oscillator.stop(ctx.currentTime + 0.15); // Dura 150ms
             } catch (e) {
-                console.log("AudioContext non ancora abilitato dall'interazione utente.");
+                console.log("Impossibile suonare il bip acustico:", e);
             }
         }
 
@@ -253,7 +284,7 @@
                 if (onEndCallback) onEndCallback();
                 return;
             }
-            sintesiVocale.cancel(); // Ferma eventuali letture precedenti
+            sintesiVocale.cancel(); // Silenzia letture precedenti
             var u = new SpeechSynthesisUtterance(testo);
             u.lang = 'it-IT';
             u.rate = 1.0;
@@ -267,7 +298,6 @@
          * Gestisce la comunicazione unificata tra Apps Script interno ed esterno (GitHub fetch)
          */
         function inviaDatiAlServer(azione, dati, onSuccess, onFailure) {
-            // Rileva se stiamo girando dentro Google Apps Script o su un sito esterno
             if (typeof google !== 'undefined' && google.script && google.script.run) {
                 if (azione === "chiamaGemini") {
                     google.script.run
@@ -281,7 +311,6 @@
                         .rilevaPosizioneAutostrada(dati.lat, dati.lon);
                 }
             } else {
-                // Chiamata esterna standard fetch (CORS-friendly per GitHub Pages)
                 if (APPS_SCRIPT_URL === "" || APPS_SCRIPT_URL.indexOf("INSERISCI_QUI") !== -1) {
                     onFailure({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });
                     return;
@@ -298,7 +327,7 @@
                 fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'cors',
-                    headers: { 'Content-Type': 'text/plain' }, // Indispensabile per evitare pre-flight OPTIONS
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payloadPost)
                 })
                 .then(function(res) { return res.json(); })
@@ -357,7 +386,6 @@
             document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();
             ristorantiTrovati = data.ristoranti;
 
-            // Aggiorna i testi dei tab con i nomi abbreviati dei ristoranti
             for (var i = 0; i < 3; i++) {
                 var tab = document.getElementById('tab-' + i);
                 if (tab && ristorantiTrovati[i]) {
@@ -368,13 +396,9 @@
             loading.classList.add('hidden');
             risultato.classList.remove('hidden');
 
-            // Inizializza o aggiorna la mappa
             aggiornaMappa();
-
-            // Mostra il primo ristorante della lista
             mostraRistorante(0);
 
-            // Se la ricerca è vocale, l'assistente ti parla dei risultati
             if (modalitaVocaleAttiva) {
                 var primoRisto = ristorantiTrovati[0];
                 var piattiTesto = primoRisto.piattiConsigliati ? primoRisto.piattiConsigliati.join(" e ") : "specialità tipiche";
@@ -402,7 +426,6 @@
             var ristorante = ristorantiTrovati[indice];
             if (!ristorante) return;
 
-            // Modifica lo stato attivo dei tab graficamente
             for (var i = 0; i < 3; i++) {
                 var tab = document.getElementById('tab-' + i);
                 if (i === indice) {
@@ -412,7 +435,6 @@
                 }
             }
 
-            // Aggiorna le informazioni testuali della scheda attiva
             document.getElementById('res-nome').textContent = ristorante.nomeRistorante;
             document.getElementById('res-indirizzo').textContent = ristorante.indirizzo;
             document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + ristorante.tempoDalCasello + ' minuti dal casello';
@@ -433,7 +455,6 @@
             var queryMappa = encodeURIComponent(ristorante.nomeRistorante + ' ' + ristorante.indirizzo);
             document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;
 
-            // Sposta la mappa e apri il popup del ristorante selezionato
             if (mappaApp && markerLayers[indice]) {
                 mappaApp.setView([ristorante.lat, ristorante.lng], 14);
                 markerLayers[indice].openPopup();
@@ -441,30 +462,25 @@
         }
 
         function aggiornaMappa() {
-            // Se la mappa non esiste ancora, la creiamo da zero
             if (!mappaApp) {
                 mappaApp = L.map('map', {
-                    zoomControl: false // Disabilitiamo per un'interfaccia mobile pulita
+                    zoomControl: false 
                 }).setView([ristorantiTrovati[0].lat, ristorantiTrovati[0].lng], 12);
 
-                // Aggiungiamo lo strato cartografico scuro (Dark Mode CartoDB per abbinarsi all'app)
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(mappaApp);
             }
 
-            // Forza il ricalcolo delle dimensioni della mappa (essenziale dato che l'elemento era nascosto)
             setTimeout(function() {
                 mappaApp.invalidateSize();
             }, 100);
 
-            // Rimuoviamo i vecchi marker esistenti
             markerLayers.forEach(function(marker) {
                 mappaApp.removeLayer(marker);
             });
             markerLayers = [];
 
-            // Creiamo un'icona personalizzata bellissima e a prova di errore (inline SVG/HTML)
             var creaIconaCustom = function(numero) {
                 return L.divIcon({
                     html: '<div class="bg-amber-500 text-gray-950 font-black rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-xl text-sm">' + numero + '</div>',
@@ -476,7 +492,6 @@
 
             var bounds = [];
 
-            // Posiziona i 3 marker sulla mappa
             ristorantiTrovati.forEach(function(ristorante, indice) {
                 var marker = L.marker([ristorante.lat, ristorante.lng], {
                     icon: creaIconaCustom(indice + 1)
@@ -484,7 +499,6 @@
 
                 marker.bindPopup("<b class='text-gray-900'>" + ristorante.nomeRistorante + "</b><br><span class='text-xs text-gray-650'>" + ristorante.indirizzo + "</span>");
                 
-                // Cliccando sul marker si apre la corrispondente scheda in basso
                 marker.on('click', function() {
                     mostraRistorante(indice);
                 });
@@ -493,20 +507,17 @@
                 bounds.push([ristorante.lat, ristorante.lng]);
             });
 
-            // Adatta l'inquadratura per mostrare contemporaneamente tutti e 3 i ristoranti
             if (bounds.length > 0) {
                 mappaApp.fitBounds(bounds, { padding: [40, 40] });
             }
         }
 
-        // Bottone reset
         document.getElementById('btn-reset').addEventListener('click', function() {
             risultato.classList.add('hidden');
             appContent.classList.remove('hidden');
             resetGraficaVocale();
         });
 
-        // Gestione del pulsante GPS automatico (solo GPS, non vocale)
         document.getElementById('btn-gps').addEventListener('click', function() {
             rilevaGPS(false);
         });
@@ -544,7 +555,6 @@
                         flashField('ultimoCasello');
 
                         if (isVocale) {
-                            // CONTROLLO DI BYPASS: Se la meta è già stata scritta a mano, saltiamo l'ascolto microfono!
                             var metaGiaInserita = document.getElementById('meta').value.trim();
                             if (metaGiaInserita !== "") {
                                 var fraseConferma = "Posizione rilevata sulla " + data.autostrada + 
@@ -555,7 +565,6 @@
                                     form.dispatchEvent(new Event('submit'));
                                 });
                             } else {
-                                // Flusso vocale standard: fa la domanda e attiva il microfono
                                 var fraseDomanda = "Posizione rilevata sulla " + data.autostrada + 
                                     " all'altezza di " + data.ultimoCasello + ". Pronuncia la tua meta dopo il bip.";
                                 
@@ -590,7 +599,7 @@
                 }
             }, {
                 enableHighAccuracy: true,
-                timeout: 8000,
+                timeout: 10000,
                 maximumAge: 0
             });
         }
@@ -603,7 +612,6 @@
                 return;
             }
 
-            // Suona il bip per segnalare l'inizio dell'ascolto vocale
             suonaBip();
 
             impostaStatoVocale("Ti sto ascoltando...", "bg-red-600 voice-active", "fa-solid fa-microphone-lines");
@@ -627,7 +635,6 @@
                 });
             };
 
-            // Riconoscimento errori con diagnostica dettagliata
             riconoscimentoVocale.onerror = function(event) {
                 console.error("Errore riconoscimento:", event.error);
                 
@@ -657,8 +664,11 @@
             }
         }
 
-        // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA DEL MICROFONO
+        // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA E SBLOCCO AUDIO SINCRO
         document.getElementById('btn-voice-start').addEventListener('click', function() {
+            // Sblocca preventivamente la sintesi vocale e l'audio sul browser del telefono (iOS/Android)
+            sbloccaAudioSito();
+            
             sintesiVocale.cancel(); // Silenzia letture in corso
             
             var metaInseritaAmano = document.getElementById('meta').value.trim();
@@ -666,7 +676,7 @@
             // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi" (Bypassa totalmente la richiesta microfono!)
             if (metaInseritaAmano !== "") {
                 modalitaVocaleAttiva = true;
-                impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid = fa-location-arrow");
+                impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");
                 
                 parla("Meta impostata: " + metaInseritaAmano + ". Avvio localizzazione GPS.", function() {
                     rilevaGPS(true);
@@ -707,6 +717,10 @@
                     resetGraficaVocale();
                 });
         });
+
+        function impostaStatoVocale(classiSfondo, classiIcona) {
+            // Nota: Se la funzione richiede anche il parametro titolo, usalo se opportuno
+        }
 
         function impostaStatoVocale(titolo, classiSfondo, classiIcona) {
             document.getElementById('voice-status-title').textContent = titolo;
