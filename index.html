@@ -55,6 +55,27 @@
     <!-- FORM DI INGRESSO E CO-PILOTA -->
     <main id="app-content" class="flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
         
+        <!-- BANNER INSTALLAZIONE SMART (Scomparso di default, mostrato via JS) -->
+        <div id="install-banner" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 p-4 rounded-2xl shadow-2xl flex flex-col justify-between items-center gap-3 border border-amber-400/30">
+            <div class="flex items-center gap-3 text-left w-full">
+                <div class="text-2xl text-gray-950 flex-shrink-0">
+                    <i id="install-banner-icon" class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="font-black text-sm uppercase tracking-wide">Installa SostaGourmet</h4>
+                    <p id="install-banner-text" class="text-xs font-bold leading-tight mt-0.5 text-gray-900"></p>
+                </div>
+                <button type="button" onclick="document.getElementById('install-banner').classList.add('hidden')" class="text-gray-950/70 hover:text-gray-950 p-1 flex-shrink-0">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="install-btn-container" class="hidden w-full pt-1">
+                <button type="button" id="btn-install-app" class="w-full bg-gray-950 hover:bg-gray-900 text-amber-500 font-black text-xs py-2.5 rounded-xl shadow transition active:scale-95 uppercase tracking-wider">
+                    Installazione Rapida
+                </button>
+            </div>
+        </div>
+
         <!-- CARD ASSISTENTE VOCALE STRATEGICO -->
         <div class="bg-gradient-to-br from-amber-500/20 to-gray-900 rounded-2xl border border-amber-500/30 p-5 shadow-xl flex flex-col items-center text-center space-y-3">
             <div id="voice-icon-container" class="w-14 h-14 rounded-full bg-amber-500 text-gray-950 flex items-center justify-center text-2xl shadow-lg transition-all duration-300">
@@ -191,7 +212,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-[10px] text-gray-655 py-2 mt-4">
+    <footer class="text-center text-[10px] text-gray-650 py-2 mt-4">
         SostaGourmet © 2026 - by mdptz
     </footer>
 
@@ -295,6 +316,7 @@
             }
         }
 
+        // Genera il bip acustico usando il canale precedentemente sbloccato
         // Genera il bip acustico usando il canale precedentemente sbloccato
         function suonaBip() {
             if (isUnloading) return;
@@ -812,6 +834,51 @@
                     field.classList.remove('bg-amber-500/10', 'border-amber-500');
                 }, 1500);
             }
+        }
+
+        // --- SISTEMA INTELLIGENTE DI INSTALLAZIONE PWA ---
+        let deferredPrompt = null;
+        const installBanner = document.getElementById('install-banner');
+        const installText = document.getElementById('install-banner-text');
+        const btnInstallContainer = document.getElementById('install-btn-container');
+        const btnInstallApp = document.getElementById('btn-install-app');
+        const installIcon = document.getElementById('install-banner-icon');
+
+        // Controlla se il sito è aperto già in modalità "App Standalone" (Già installato)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (!isStandalone) {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isIOS) {
+                // Per iOS (Safari): Mostra il fumetto di aiuto grafico per il tasto Condividi
+                installText.innerHTML = "Aggiungila sul tuo iPhone! Premi il tasto <b>Condividi</b> <i class='fa-solid fa-share-from-square mx-1'></i> in fondo e seleziona <b>Aggiungi alla schermata Home</b>.";
+                installIcon.className = "fa-solid fa-mobile-retro";
+                installBanner.classList.remove('hidden');
+            } else {
+                // Per Android/Chrome/PC: Mettiti in ascolto dell'evento di installazione immediata
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault(); // Impedisce al browser di mostrare il prompt nativo sgradevole
+                    deferredPrompt = e; // Salva l'evento per attivarlo al click
+                    
+                    installText.textContent = "Usa SostaGourmet come una vera applicazione sul tuo telefono con un solo tocco!";
+                    btnInstallContainer.classList.remove('hidden');
+                    installBanner.classList.remove('hidden');
+                });
+            }
+        }
+
+        // Esegue l'installazione immediata per Android al clic del bottone
+        if (btnInstallApp) {
+            btnInstallApp.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                installBanner.classList.add('hidden'); // Nasconde il banner temporaneamente
+                deferredPrompt.prompt(); // Mostra la finestra ufficiale di installazione di Chrome
+                
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Risultato installazione: ${outcome}`);
+                deferredPrompt = null;
+            });
         }
 
         // Registrazione del Service Worker per abilitare la PWA
