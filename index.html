@@ -817,7 +817,7 @@
 // Registrazione del Service Worker per abilitare la PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('https://mdptz.github.io/sostagourmet/service-worker.js')
+        navigator.serviceWorker.register('./service-worker.js')
         .then(function(reg) {
             console.log('Service Worker registrato con successo!', reg.scope);
         })
