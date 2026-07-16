@@ -322,7 +322,6 @@
         }
 
         // Genera il bip acustico usando il canale precedentemente sbloccato
-        // Genera il bip acustico usando il canale precedentemente sbloccato
         function suonaBip() {
             if (isUnloading) return;
             try {
@@ -366,23 +365,50 @@
 
         /**
          * Gestisce la comunicazione unificata tra Apps Script interno ed esterno (GitHub fetch)
+         * con cattura e visualizzazione immediata dei log di debug del server in console (F12).
          */
         function inviaDatiAlServer(azione, dati, onSuccess, onFailure) {
+            // Wrapper per stampare i log di successo ricevuti dal server direttamente in console
+            var successWrapper = function(response) {
+                if (response && response.debugLogs) {
+                    console.group("%c🪵 LOGS DI DEBUG DEL SERVER (Google Apps Script - Successo)", "color: #f59e0b; font-weight: bold;");
+                    response.debugLogs.forEach(function(line) { console.log(line); });
+                    console.groupEnd();
+                }
+                onSuccess(response);
+            };
+            
+            // Wrapper per stampare i log di errore ricevuti dal server direttamente in console
+            var failureWrapper = function(error) {
+                if (error && error.debugLogs) {
+                    console.group("%c⚠️ ERRORE RILEVATO: LOG DI DEBUG DEL SERVER", "color: #ef4444; font-weight: bold;");
+                    error.debugLogs.forEach(function(line) { console.error(line); });
+                    console.groupEnd();
+                } else if (window.lastErrorData && window.lastErrorData.debugLogs) {
+                    console.group("%c⚠️ ERRORE RILEVATO: LOG DI DEBUG DEL SERVER (Salvato)", "color: #ef4444; font-weight: bold;");
+                    window.lastErrorData.debugLogs.forEach(function(line) { console.error(line); });
+                    console.groupEnd();
+                }
+                onFailure(error);
+            };
+
             if (typeof google !== 'undefined' && google.script && google.script.run) {
+                // Modalità Google Apps Script Nativa (Deploy di test /dev)
                 if (azione === "chiamaGemini") {
                     google.script.run
-                        .withSuccessHandler(onSuccess)
-                        .withFailureHandler(onFailure)
+                        .withSuccessHandler(successWrapper)
+                        .withFailureHandler(failureWrapper)
                         .chiamaGemini(dati);
                 } else if (azione === "rilevaPosizione") {
                     google.script.run
-                        .withSuccessHandler(onSuccess)
-                        .withFailureHandler(onFailure)
+                        .withSuccessHandler(successWrapper)
+                        .withFailureHandler(failureWrapper)
                         .rilevaPosizioneAutostrada(dati.lat, dati.lon);
                 }
             } else {
+                // Modalità esterna (GitHub Pages o Locale via Fetch API)
                 if (APPS_SCRIPT_URL === "" || APPS_SCRIPT_URL.indexOf("INSERISCI_QUI") !== -1) {
-                    onFailure({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });
+                    failureWrapper({ message: "URL di Apps Script esterno non configurato. Inserisci l'URL pubblico nel file index.html!" });
                     return;
                 }
                 
@@ -402,14 +428,22 @@
                 })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
+                    // Stampa i log estratti dal database temporaneo del server se presenti
+                    if (data && data.debugLogs) {
+                        console.group("%c🪵 LOGS DI DEBUG DEL SERVER (Fetch)", "color: #f59e0b; font-weight: bold;");
+                        data.debugLogs.forEach(function(line) { console.log(line); });
+                        console.groupEnd();
+                        window.lastErrorData = data; // Salva in cache globale per fallback errori
+                    }
+                    
                     if (data && data.error) {
-                        onFailure({ message: data.error });
+                        failureWrapper({ message: data.error, debugLogs: data.debugLogs });
                     } else {
-                        onSuccess(data);
+                        successWrapper(data);
                     }
                 })
                 .catch(function(err) {
-                    onFailure({ message: "Errore di connessione con il server API: " + err.message });
+                    failureWrapper({ message: "Errore di connessione con il server API: " + err.message });
                 });
             }
         }
@@ -735,6 +769,7 @@
                 
                 var dettaglioErrore = "Non ho capito la meta.";
                 if (event.error === 'no-speech') {
+                    document.getElementById('meta').value = ""; // Lascia il campo vuoto se non comprende
                     dettaglioErrore = "Nessuna meta pronunciata rilevata. Riprova con la digitazione manuale.";
                 } else if (event.error === 'aborted') {
                     dettaglioErrore = "Riconoscimento vocale interrotto. Riprova.";
