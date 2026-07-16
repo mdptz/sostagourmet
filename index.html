@@ -55,7 +55,7 @@
     <!-- FORM DI INGRESSO E CO-PILOTA -->
     <main id="app-content" class="flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
         
-        <!-- BANNER INSTALLAZIONE SMART (Scomparso di default, mostrato via JS) -->
+        <!-- BANNER INSTALLAZIONE SMART -->
         <div id="install-banner" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 p-4 rounded-2xl shadow-2xl flex flex-col justify-between items-center gap-3 border border-amber-400/30">
             <div class="flex items-center gap-3 text-left w-full">
                 <div class="text-2xl text-gray-950 flex-shrink-0">
@@ -162,9 +162,9 @@
 
         <!-- Selettore Tab per le 3 opzioni di ristorante -->
         <div class="grid grid-cols-3 gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs font-bold text-center">
-            <button type="button" id="tab-0" onclick="mostraRistorante(0)" class="py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200">Opzione 1</button>
-            <button type="button" id="tab-1" onclick="mostraRistorante(1)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200">Opzione 2</button>
-            <button type="button" id="tab-2" onclick="mostraRistorante(2)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200">Opzione 3</button>
+            <button type="button" id="tab-0" onclick="mostraRistorante(0)" class="py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200 font-bold">Opzione 1</button>
+            <button type="button" id="tab-1" onclick="mostraRistorante(1)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold">Opzione 2</button>
+            <button type="button" id="tab-2" onclick="mostraRistorante(2)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold">Opzione 3</button>
         </div>
 
         <!-- Scheda dettagliata del ristorante attualmente selezionato -->
@@ -534,8 +534,8 @@
         // Funzione per compilare i dettagli dell'opzione selezionata
         function mostraRistorante(indice) {
             if (isUnloading) return;
-            var ristorante = ristorantiTrovati[indice];
-            if (!ristorante) return;
+            var r = ristorantiTrovati[indice];
+            if (!r) return;
 
             for (var i = 0; i < 3; i++) {
                 var tab = document.getElementById('tab-' + i);
@@ -546,28 +546,28 @@
                 }
             }
 
-            document.getElementById('res-nome').textContent = ristorante.nomeRistorante;
-            document.getElementById('res-indirizzo').textContent = ristorante.indirizzo;
-            document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + ristorante.tempoDalCasello + ' minuti dal casello';
-            document.getElementById('res-descrizione').textContent = ristorante.percheMerita;
-            document.getElementById('res-prezzo').textContent = ristorante.prezzoMedioStimato || "Sotto i 30€";
+            document.getElementById('res-nome').textContent = r.nomeRistorante;
+            document.getElementById('res-indirizzo').textContent = r.indirizzo;
+            document.getElementById('res-tempo').innerHTML = '<i class="fa-solid fa-car"></i> A soli ' + r.tempoDalCasello + ' minuti dal casello';
+            document.getElementById('res-descrizione').textContent = r.percheMerita;
+            document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato || "Sotto i 30€";
 
             var listaPiatti = document.getElementById('res-piatti');
             listaPiatti.innerHTML = '';
-            if (ristorante.piattiConsigliati) {
-                ristorante.piattiConsigliati.forEach(function(piatto) {
+            if (r.piattiConsigliati) {
+                r.piattiConsigliati.forEach(function(piatto) {
                     var li = document.createElement('li');
                     li.textContent = piatto;
                     listaPiatti.appendChild(li);
                 });
             }
 
-            document.getElementById('btn-chiama').href = 'tel:' + ristorante.telefono;
-            var queryMappa = encodeURIComponent(ristorante.nomeRistorante + ' ' + ristorante.indirizzo);
+            document.getElementById('btn-chiama').href = 'tel:' + r.telefono;
+            var queryMappa = encodeURIComponent(r.nomeRistorante + ' ' + r.indirizzo);
             document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;
 
             if (mappaApp && markerLayers[indice]) {
-                mappaApp.setView([ristorante.lat, ristorante.lng], 14);
+                mappaApp.setView([r.lat, r.lng], 14);
                 markerLayers[indice].openPopup();
             }
         }
@@ -758,7 +758,6 @@
             };
 
             riconoscimentoVocale.onerror = function(event) {
-                // Se l'utente chiude la pagina o non siamo in ascolto attivo, IGNORA l'errore senza generare alert o speech!
                 if (isUnloading || !isListeningForMeta) {
                     console.log("Errore ignorato (pagina chiusa o non in ascolto):", event.error);
                     return;
@@ -797,14 +796,12 @@
 
         // GESTIONE DEI PULSANTI VOCALI GRAFICI CON VERIFICA PREVENTIVA E SBLOCCO AUDIO SINCRO
         document.getElementById('btn-voice-start').addEventListener('click', function() {
-            // Sblocca preventivamente la sintesi vocale e l'audio sul browser del telefono (iOS/Android)
             sbloccaAudioSito();
-            
             sintesiVocale.cancel(); // Silenzia letture in corso
             
             var metaInseritaAmano = document.getElementById('meta').value.trim();
             
-            // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi" (Bypassa totalmente la richiesta microfono!)
+            // SE LA META È GIÀ PRESENTE: Modalità "Solo Sintesi"
             if (metaInseritaAmano !== "") {
                 modalitaVocaleAttiva = true;
                 impostaStatoVocale("Localizzazione in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-location-arrow");
