@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DV0Q2T1WHH"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-DV0Q2T1WHH"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+      gtag('config', 'G-DV0Q2T1WHH');
+    </script>
 
-  gtag('config', 'G-DV0Q2T1WHH');
-</script>
-
-  <link rel="manifest" href="manifest.json">
-  
+    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SostaGourmet - Osterie al Casello</title>
@@ -204,7 +202,7 @@
     </footer>
 
     <script>
-        // Configura qui la tua URL della Web App di Google Apps Script (ottenuta facendo il Deploy definitivo)
+        // Configura qui la tua URL della Web App di Google Apps Script
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
         // Gestione degli slider grafici
@@ -226,7 +224,6 @@
         var loading = document.getElementById('loading');
         var risultato = document.getElementById('risultato');
 
-        // Memorizzazione globale delle opzioni ristoranti e della mappa
         var ristorantiTrovati = [];
         var mappaApp = null;
         var markerLayers = [];
@@ -255,7 +252,6 @@
             }
         }
 
-        // SISTEMA VOCALE NATIVO
         var sintesiVocale = window.speechSynthesis;
         var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         var riconoscimentoVocale = null;
@@ -449,7 +445,6 @@
             document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();
             ristorantiTrovati = data.ristoranti;
 
-            // Reset tab visibility e text
             for (var i = 0; i < 3; i++) {
                 var tab = document.getElementById('tab-' + i);
                 if (tab) {
@@ -536,7 +531,6 @@
                 document.getElementById('btn-chiama').style.pointerEvents = 'none';
             }
 
-            // LINK GOOGLE MAPS CORRETTO E SICURO
             var queryMappa = encodeURIComponent(r.nomeRistorante + ', ' + r.indirizzo);
             document.getElementById('btn-naviga').href = 'https://www.google.com/maps/search/?api=1&query=' + queryMappa;
 
@@ -813,7 +807,6 @@
             }
         }
 
-        // --- SISTEMA DI INSTALLAZIONE PWA ---
         let deferredPrompt = null;
         const installBanner = document.getElementById('install-banner');
         const installText = document.getElementById('install-banner-text');
