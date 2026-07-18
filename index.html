@@ -11,7 +11,6 @@
     <!-- Google Fonts: Inter per una perfetta leggibilità anche in viaggio -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- STREAMING_CHUNK: Definizione degli stili CSS personalizzati per cursori e animazioni... -->
     <style>
         body { font-family: 'Inter', sans-serif; }
         /* Cursore premium per gli slider di controllo */
@@ -40,7 +39,6 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
 
-    <!-- STREAMING_CHUNK: Creazione della modale di notifica personalizzata che sostituisce gli alert... -->
     <!-- Finestra Modale per gli Errori (Sostituisce gli alert del browser per un look più premium) -->
     <div id="error-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-gray-900 border border-red-500/30 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
@@ -77,7 +75,6 @@
             </p>
         </div>
 
-        <!-- STREAMING_CHUNK: Creazione del modulo principale di viaggio e parametri di sosta... -->
         <!-- Area di controllo e di input stradale -->
         <div id="app-content" class="space-y-4">
             
@@ -126,7 +123,6 @@
             </button>
         </div>
 
-        <!-- STREAMING_CHUNK: Creazione dell'animazione e log di caricamento in tempo reale... -->
         <!-- Schermata di attesa e logica di connessione server in corso -->
         <div id="loading" class="hidden bg-gray-900 p-8 rounded-3xl border border-gray-800 text-center space-y-6 shadow-2xl py-12 max-w-sm mx-auto">
             <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
@@ -151,7 +147,6 @@
             </div>
         </div>
 
-        <!-- STREAMING_CHUNK: Sviluppo del pannello dei risultati geografici e delle mappe... -->
         <!-- Schermata dei risultati gastronomici e cartografici -->
         <div id="risultato" class="hidden space-y-4">
             
@@ -169,14 +164,13 @@
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <!-- Pulsanti per alternare orizzontalmente le 3 osterie reali candidate -->
+            <!-- Pulsanti per alternare orizzontalmente le osterie reali candidate -->
             <div class="grid grid-cols-3 gap-2" id="scelta-osterie-pills">
-                <button onclick="mostraRistorante(0)" id="pill-0" class="bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow">OPZIONE 1</button>
-                <button onclick="mostraRistorante(1)" id="pill-1" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95">OPZIONE 2</button>
-                <button onclick="mostraRistorante(2)" id="pill-2" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95">OPZIONE 3</button>
+                <button onclick="mostraRistorante(0)" id="pill-0" class="bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow truncate px-1">OPZIONE 1</button>
+                <button onclick="mostraRistorante(1)" id="pill-1" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 2</button>
+                <button onclick="mostraRistorante(2)" id="pill-2" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 3</button>
             </div>
 
-            <!-- STREAMING_CHUNK: Creazione della scheda informativa di dettaglio della trattoria... -->
             <!-- Scheda dettagliata del locale -->
             <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4 relative">
                 <div>
@@ -228,7 +222,6 @@
 
     </main>
 
-    <!-- STREAMING_CHUNK: Creazione delle notifiche ed aiuti all'installazione per dispositivi mobili... -->
     <!-- Fumetto d'aiuto installazione per iOS/Safari -->
     <div id="ios-install-bubble" class="hidden fixed bottom-6 left-4 right-4 bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-2xl z-50 text-xs space-y-3 animate-bounce">
         <div class="flex justify-between items-start">
@@ -250,7 +243,6 @@
         SostaGourmet © 2026 • Realizzato per i buongustai in autostrada
     </footer>
 
-    <!-- STREAMING_CHUNK: Inizializzazione della logica JavaScript ed helpers di calcolo... -->
     <script>
         // URL ufficiale del server proxy di Google Apps Script (SostaGourmet Backend)
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
@@ -275,12 +267,26 @@
                 return "1 ora";
             } else {
                 var ore = Math.floor(minuti / 60);
-                var restanti = Grid = minuti % 60;
+                var restanti = minuti % 60;
                 if (restanti === 0) {
                     return ore + (ore === 1 ? " ora" : " ore");
                 }
                 return ore + (ore === 1 ? " ora" : " ore") + " e " + restanti + " min";
             }
+        }
+
+        // Funzione per abbreviare e pulire i nomi dei locali sui pulsanti (Pills)
+        function pulisciNomePill(nome) {
+            if (!nome) return "SOSTA";
+            var n = nome.trim();
+            // Rimuove prefissi comuni insensibile al maiuscolo/minuscolo
+            n = n.replace(/^(Trattoria|Osteria|Ristorante|Antica Trattoria|Antica Osteria|Antico Ristorante|Albergo|Da|Al|All'|La|Il)\s+/i, "");
+            
+            // Se ancora troppo lungo, taglia a 11 caratteri e aggiunge puntini
+            if (n.length > 11) {
+                return n.substring(0, 10).trim() + "..";
+            }
+            return n.toUpperCase();
         }
 
         var sliderTempo = document.getElementById('tempoAllaSosta');
@@ -313,7 +319,6 @@
         var isUnloading = false;
         var isListeningForMeta = false;
 
-        /* STREAMING_CHUNK: Gestione dell'invio dei dati del modulo in formato testo semplice... */
         form.addEventListener('submit', function(e) {
             if (e) e.preventDefault();
 
@@ -350,7 +355,6 @@
             }
         }
 
-        /* STREAMING_CHUNK: Elaborazione dei dati ricevuti in risposta dal server remoto... */
         function onSuccess(risposta) {
             if (risposta && risposta.error) {
                 mostraErrore(risposta.error);
@@ -364,6 +368,19 @@
 
             ristorantiTrovati = risposta.ristoranti;
             
+            // Aggiorna dinamicamente il testo delle pillole con il nome reale delle osterie
+            for (var i = 0; i < 3; i++) {
+                var pill = document.getElementById('pill-' + i);
+                if (pill) {
+                    if (ristorantiTrovati[i]) {
+                        pill.textContent = pulisciNomePill(ristorantiTrovati[i].nomeRistorante);
+                        pill.classList.remove('hidden');
+                    } else {
+                        pill.classList.add('hidden'); // Nasconde il pulsante se ci sono meno di 3 osterie
+                    }
+                }
+            }
+
             loading.classList.add('hidden');
             document.getElementById('hero-banner').classList.add('hidden');
             risultato.classList.remove('hidden');
@@ -378,7 +395,6 @@
             mostraErrore("Connessione instabile o errore del server. Riprova tra poco.");
         }
 
-        /* STREAMING_CHUNK: Aggiornamento dinamico delle informazioni della trattoria e dei caselli... */
         function mostraRistorante(indice) {
             if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
             var r = ristorantiTrovati[indice];
@@ -406,16 +422,16 @@
             }
 
             document.getElementById('btn-chiama').href = r.telefono ? "tel:" + r.telefono : "#";
-            document.getElementById('btn-naviga').href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(r.indirizzo);
+            document.getElementById('btn-naviga').href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(r.nomeRistorante + ", " + r.indirizzo);
 
-            // Cambia l'aspetto grafico dei pulsanti di selezione (Pills)
+            // Cambia l'aspetto grafico dei pulsanti di selezione (Pills) senza sovrascrivere il testo
             for (var i = 0; i < 3; i++) {
                 var pill = document.getElementById('pill-' + i);
                 if (pill) {
                     if (i === indice) {
-                        pill.className = "bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow";
+                        pill.className = "bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow truncate px-1";
                     } else {
-                        pill.className = "bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95";
+                        pill.className = "bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1";
                     }
                 }
             }
@@ -449,7 +465,6 @@
             }).addTo(mappaApp);
         }
 
-        /* STREAMING_CHUNK: Implementazione del tunnel CORS sicuro tramite testo semplice... */
         /**
          * Invia i dati al server tramite POST bypassando il controllo CORS preventivo (pre-flight OPTIONS).
          * Imposta l'intestazione su 'text/plain', che viene accettata ed interpretata da Google Apps Script.
@@ -472,7 +487,6 @@
             .catch(onKo);
         }
 
-        /* STREAMING_CHUNK: Gestione dei sensori di geolocalizzazione GPS integrati... */
         // Integrazione GPS
         var btnGps = document.getElementById('btn-gps');
         if (btnGps) {
@@ -515,7 +529,6 @@
             });
         }
 
-        /* STREAMING_CHUNK: Inizializzazione della logica di bordo per il copilota vocale... */
         // Integrazione sintesi ed assistente vocale
         var btnVocale = document.getElementById('btn-copilota-vocale');
         if (btnVocale) {
@@ -556,7 +569,6 @@
             };
         }
 
-        /* STREAMING_CHUNK: Configurazione del ciclo di vita della Progressive Web App (PWA)... */
         // Supporto installazione nativa PWA (Android / Windows)
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
