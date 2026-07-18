@@ -1,63 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Sfondo scuro e profondo con angoli smussati per l'app mobile -->
-  <rect width="512" height="512" rx="110" fill="#030712" />
-  
-  <!-- LA STRADA IN PROSPETTIVA -->
-  <polygon points="210,240 302,240 430,470 82,470" fill="#1f2937" opacity="0.4" />
-  <!-- Linea tratteggiata autostradale -->
-  <line x1="256" y1="240" x2="256" y2="470" stroke="#f59e0b" stroke-dasharray="15 15" stroke-width="6" opacity="0.5" />
-
-  <!-- IL CASELLO AUTOSTRADALE (Pilastri laterali) -->
-  <rect x="110" y="220" width="16" height="250" fill="#374151" rx="4" />
-  <rect x="386" y="220" width="16" height="250" fill="#374151" rx="4" />
-  
-  <!-- Tettoia del Casello -->
-  <path d="M80 200 L432 200 L402 230 L110 230 Z" fill="#4b5563" />
-  <rect x="80" y="190" width="352" height="12" rx="4" fill="#f59e0b" />
-
-  <!-- INSEGNA GOURMET IN CIMA AL CASELLO (Forchetta + Coltello) -->
-  <circle cx="256" cy="135" r="50" fill="#030712" stroke="#f59e0b" stroke-width="6" />
-  <!-- Bagliore dell'insegna -->
-  <circle cx="256" cy="135" r="54" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.3" />
-  
-  <!-- Posate all'interno dell'insegna -->
-  <g transform="translate(256, 135) scale(0.6)">
-    <!-- Coltello -->
-    <path d="M-22 15 L-10 3 L-10 -30 C-10 -38, -18 -45, -22 -45 Z" fill="#f59e0b" />
-    <rect x="-24" y="15" width="4" height="25" rx="2" fill="#f59e0b" />
-    <!-- Forchetta -->
-    <path d="M10 -5 L10 -40 L13 -40 L13 -20 L16 -20 L16 -40 L19 -40 L19 -20 L22 -20 L22 -40 L25 -40 L25 -5 C25 10, 10 10, 10 -5 Z" fill="#f59e0b" />
-    <rect x="16" y="8" width="4" height="32" rx="2" fill="#f59e0b" />
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#030712"/>
+  <circle cx="256" cy="256" r="225" stroke="#f59e0b" stroke-width="4" stroke-dasharray="12 16" fill="none" opacity="0.25"/>
+  <path d="M210 240 L302 240 L400 440 L112 440 Z" fill="#080c14" stroke="#f59e0b" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M256 440 L256 240" stroke="#f59e0b" stroke-width="10" stroke-dasharray="14 16" stroke-linecap="round" opacity="0.8"/>
+  <g transform="translate(256, 345) scale(0.6)">
+    <path d="M-20 70 Q0 80 20 70 L15 -30 Q0 -40 -15 -30 Z" fill="#f59e0b"/>
+    <path d="M-8 -32 L-18 -60 M8 -32 L18 -60" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="-18" cy="-60" r="6" fill="#f59e0b"/>
+    <circle cx="18" cy="-60" r="6" fill="#f59e0b"/>
+    <circle cx="0" cy="20" r="38" fill="#111827" stroke="#f59e0b" stroke-width="8"/>
+    <path d="M0 -5 A 22 22 0 1 1 -15 25 A 12 12 0 1 1 -5 15" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round"/>
   </g>
-
-  <!-- L'AUTOMOBILE MODERNA (Vista frontale) -->
-  <g transform="translate(0, 45)">
-    <!-- Ruote che si intravedono in basso -->
-    <rect x="175" y="340" width="32" height="20" rx="5" fill="#111827" stroke="#f59e0b" stroke-width="2" />
-    <rect x="305" y="340" width="32" height="20" rx="5" fill="#111827" stroke="#f59e0b" stroke-width="2" />
-
-    <!-- Specchietti retrovisori sportivi -->
-    <path d="M145,280 C132,280 130,288 138,292 L150,294 Z" fill="#f59e0b" />
-    <path d="M367,280 C380,280 382,288 374,292 L362,294 Z" fill="#f59e0b" />
-
-    <!-- Abitacolo e Parabrezza con riflesso -->
-    <path d="M188,270 L210,230 C215,222 228,218 256,218 C284,218 297,222 302,230 L324,270 Z" fill="#030712" stroke="#f59e0b" stroke-width="6" />
-    <path d="M198,264 L216,234 C220,228 228,226 256,226 C284,226 292,228 296,234 L314,264 Z" fill="#fbbf24" opacity="0.15" />
-
-    <!-- Corpo principale della macchina (Sveglio, curvo e aerodinamico) -->
-    <path d="M158,270 L354,270 C366,270 374,278 370,290 L356,334 C352,345 340,352 328,352 L184,352 C172,352 160,345 156,334 L142,290 C138,278 146,270 158,270 Z" fill="#f59e0b" />
-
-    <!-- Griglia del radiatore sportiva -->
-    <rect x="206" y="310" width="100" height="24" rx="6" fill="#111827" stroke="#fbbf24" stroke-width="3" />
-    <line x1="216" y1="322" x2="296" y2="322" stroke="#fbbf24" stroke-width="2" opacity="0.8" />
-
-    <!-- Fari a LED accesi con bagliore luminoso (effetto notte in viaggio) -->
-    <!-- Faro sinistro -->
-    <circle cx="178" cy="298" r="24" fill="#fbbf24" opacity="0.2" />
-    <circle cx="178" cy="298" r="14" fill="#fff" stroke="#fbbf24" stroke-width="4" />
-    
-    <!-- Faro destro -->
-    <circle cx="334" cy="298" r="24" fill="#fbbf24" opacity="0.2" />
-    <circle cx="334" cy="298" r="14" fill="#fff" stroke="#fbbf24" stroke-width="4" />
+  <g transform="translate(256, 135) scale(1.15)">
+    <circle cx="0" cy="0" r="50" fill="#030712" stroke="#ffffff" stroke-width="8"/>
+    <circle cx="0" cy="0" r="38" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 6" opacity="0.3"/>
+    <path d="M-18 -22 V2 M-11 -22 V2 M-4 -22 V2 M-18 -22 H-4 V2 M-11 2 V18" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M12 -22 L22 -15 L17 18 H10 L14 -22" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"/>
   </g>
 </svg>
