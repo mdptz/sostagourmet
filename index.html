@@ -141,7 +141,7 @@
         <div id="map" class="h-60 w-full rounded-2xl border border-gray-800 shadow-xl overflow-hidden"></div>
 
         <div class="text-center">
-            <span id="res-casello" class="bg-amber-500 text-gray-950 text-xs font-black uppercase px-3 py-1 rounded-full">CASELLO_CONSIGLIATO</span>
+            <span id="res-casello" class="bg-amber-500 text-gray-950 text-xs font-black uppercase px-3 py-1.5 rounded-full tracking-wider shadow">CASELLO_CONSIGLIATO</span>
         </div>
 
         <div class="grid grid-cols-3 gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs font-bold text-center">
@@ -344,10 +344,6 @@
                     console.group("%c⚠️ ERRORE RILEVATO: LOG DI DEBUG DEL SERVER", "color: #ef4444; font-weight: bold;");
                     error.debugLogs.forEach(function(line) { console.error(line); });
                     console.groupEnd();
-                } else if (window.lastErrorData && window.lastErrorData.debugLogs) {
-                    console.group("%c⚠️ ERRORE RILEVATO: LOG DI DEBUG DEL SERVER (Salvato)", "color: #ef4444; font-weight: bold;");
-                    window.lastErrorData.debugLogs.forEach(function(line) { console.error(line); });
-                    console.groupEnd();
                 }
                 onFailure(error);
             };
@@ -386,12 +382,6 @@
                 })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
-                    if (data && data.debugLogs) {
-                        console.group("%c🪵 LOGS DI DEBUG DEL SERVER (Fetch)", "color: #f59e0b; font-weight: bold;");
-                        data.debugLogs.forEach(function(line) { console.log(line); });
-                        console.groupEnd();
-                        window.lastErrorData = data;
-                    }
                     if (data && data.error) {
                         failureWrapper({ message: data.error, debugLogs: data.debugLogs });
                     } else {
@@ -442,7 +432,6 @@
                 return;
             }
 
-            document.getElementById('res-casello').textContent = "ESCI A: " + data.caselloConsigliato.toUpperCase();
             ristorantiTrovati = data.ristoranti;
 
             for (var i = 0; i < 3; i++) {
@@ -471,8 +460,8 @@
                 var prezzoStr = primoRisto.prezzoMedioStimato ? ("Prezzo medio stimato a testa: " + primoRisto.prezzoMedioStimato + ". ") : "";
 
                 var testoRisultato = "Ho trovato " + ristorantiTrovati.length + " osterie fantastiche sul tuo percorso. " +
-                    "Ti consiglio di uscire al casello di " + data.caselloConsigliato + ". " +
-                    "La sesta migliore è " + primoRisto.nomeRistorante + tempoCaselloStr + prezzoStr +
+                    "Ti consiglio di uscire al casello di " + (primoRisto.caselloUscita || "destinazione") + ". " +
+                    "La trattoria migliore è " + primoRisto.nomeRistorante + tempoCaselloStr + prezzoStr +
                     "I piatti consigliati sono: " + piattiTesto + ". Buon appetito!";
                 
                 parla(testoRisultato, function() {
@@ -504,6 +493,10 @@
                     }
                 }
             }
+
+            // AGGIORNAMENTO CASELLO DI USCITA DEDICATO E INDIPENDENTE
+            var caselloLabel = r.caselloUscita ? "ESCI A: " + r.caselloUscita.toUpperCase() : "USCITA PIÙ VICINA";
+            document.getElementById('res-casello').textContent = caselloLabel;
 
             document.getElementById('res-nome').textContent = r.nomeRistorante;
             document.getElementById('res-indirizzo').textContent = r.indirizzo;
@@ -628,28 +621,39 @@
 
                 inviaDatiAlServer("rilevaPosizione", payloadGPS, function(data) {
                     if (isUnloading) return;
-                    if (data && data.autostrada) {
-                        document.getElementById('autostrada').value = data.autostrada;
-                        document.getElementById('ultimoCasello').value = data.ultimoCasello;
+                    if (data && (data.autostrada || data.ultimoCasello)) {
+                        document.getElementById('autostrada').value = data.autostrada || "";
+                        document.getElementById('ultimoCasello').value = data.ultimoCasello || "";
+                        
+                        if (!data.autostrada) {
+                            document.getElementById('autostrada').required = false;
+                        } else {
+                            document.getElementById('autostrada').required = true;
+                        }
+                        
                         flashField('autostrada');
                         flashField('ultimoCasello');
 
                         if (isVocale) {
                             var metaGiaInserita = document.getElementById('meta').value.trim();
+                            var fraseConferma = "";
+                            
+                            if (data.autostrada) {
+                                fraseConferma = "Posizione rilevata sulla " + data.autostrada + " all'altezza di " + data.ultimoCasello;
+                            } else {
+                                fraseConferma = "Posizione rilevata presso " + data.ultimoCasello;
+                            }
+
                             if (metaGiaInserita !== "") {
-                                var fraseConferma = "Posizione rilevata sulla " + data.autostrada + 
-                                    " all'altezza di " + data.ultimoCasello + ". Avvio la ricerca delle osterie verso " + metaGiaInserita + ".";
-                                
+                                fraseConferma += ". Avvio la ricerca delle osterie verso " + metaGiaInserita + ".";
                                 impostaStatoVocale("Ricerca in corso...", "bg-amber-500 animate-pulse", "fa-solid fa-spinner animate-spin");
                                 parla(fraseConferma, function() {
                                     form.dispatchEvent(new Event('submit'));
                                 });
                             } else {
-                                var fraseDomanda = "Posizione rilevata sulla " + data.autostrada + 
-                                    " all'altezza di " + data.ultimoCasello + ". Pronuncia la tua meta dopo il bip.";
-                                
+                                fraseConferma += ". Pronuncia la tua meta dopo il bip.";
                                 impostaStatoVocale("Sto parlando...", "bg-blue-600 animate-pulse", "fa-solid fa-volume-high");
-                                parla(fraseDomanda, function() {
+                                parla(fraseConferma, function() {
                                     setTimeout(function() {
                                         avviaAscoltoMeta();
                                     }, 1200);
@@ -657,7 +661,7 @@
                             }
                         }
                     } else {
-                        mostraErrore("Non sono riuscito ad agganciare l'autostrada dal GPS.");
+                        mostraErrore("Non sono riuscito a rilevare la posizione dal GPS.");
                     }
                     if (!isVocale) {
                         btn.disabled = false;
@@ -665,7 +669,7 @@
                     }
                 }, function(error) {
                     if (isUnloading) return;
-                    mostraErrore("Errore nella decodifica stradale GPS: " + error.message);
+                    mostraErrore("Errore nella geolocalizzazione stradale AI: " + error.message);
                     if (!isVocale) {
                         btn.disabled = false;
                         btn.innerHTML = originalContent;
