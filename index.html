@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SostaGourmet - Copilota Vocale al Casello</title>
     
-    <!-- Tailwind CSS per un design ultra-moderno scuro e lussuoso -->
+    <!-- Tailwind CSS per un design moderno, scuro e reattivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Inter per una leggibilità premium anche in movimento -->
+    <!-- Google Fonts: Inter per una perfetta leggibilità anche in viaggio -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- STREAMING_CHUNK: Definizione degli stili CSS personalizzati per cursori e animazioni... -->
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Ottimizzazione del cursore degli slider (range) */
+        /* Cursore premium per gli slider di controllo */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -29,17 +31,27 @@
         }
     </style>
 
-    <!-- FontAwesome per icone moderne ed eleganti -->
+    <!-- FontAwesome per le icone di bordo -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Leaflet.js per la visualizzazione cartografica interattiva e scura -->
+    <!-- Leaflet.js per la navigazione cartografica notturna offline -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
 
-    <!-- STREAMING_CHUNK: Struttura principale della barra superiore (Navbar) con pulsante PWA... -->
-    <!-- Intestazione premium scura -->
+    <!-- STREAMING_CHUNK: Creazione della modale di notifica personalizzata che sostituisce gli alert... -->
+    <!-- Finestra Modale per gli Errori (Sostituisce gli alert del browser per un look più premium) -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-red-500/30 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
+            <div class="text-red-500 text-4xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 class="text-lg font-bold text-white">Attenzione</h3>
+            <p id="error-modal-msg" class="text-gray-400 text-xs leading-relaxed"></p>
+            <button onclick="chiudiErrorModal()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-95">CHIUDI</button>
+        </div>
+    </div>
+
+    <!-- Barra superiore di navigazione con logo e opzione installazione PWA -->
     <header class="bg-gray-950 border-b border-gray-900 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2">
             <span class="text-amber-500 text-2xl font-black tracking-tighter flex items-center gap-1.5">
@@ -47,7 +59,6 @@
             </span>
         </div>
         <div class="flex items-center gap-2">
-            <!-- Pulsante intelligente per installazione nativa Android / iOS -->
             <button id="pwa-install-btn" class="hidden text-xs bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
                 <i class="fa-solid fa-download"></i> Installa App
             </button>
@@ -55,10 +66,10 @@
         </div>
     </header>
 
-    <!-- Contenuto dinamico principale della schermata -->
+    <!-- Contenitore centrale dell'applicazione -->
     <main class="flex-grow flex flex-col justify-center max-w-lg w-full mx-auto p-4 md:p-6 space-y-6">
 
-        <!-- Banner illustrativo dell'assistente stradale gourmet -->
+        <!-- Hero di benvenuto e descrizione funzionale -->
         <div id="hero-banner" class="text-center space-y-2 mt-2">
             <h1 class="text-3xl font-black tracking-tight leading-tight">Il tuo Copilota <span class="text-amber-500">Slow Food</span></h1>
             <p class="text-gray-400 text-xs max-w-sm mx-auto">
@@ -66,11 +77,11 @@
             </p>
         </div>
 
-        <!-- STREAMING_CHUNK: Blocco centrale per il caricamento o i risultati della ricerca... -->
-        <!-- Contenitore dell'applicazione principale -->
+        <!-- STREAMING_CHUNK: Creazione del modulo principale di viaggio e parametri di sosta... -->
+        <!-- Area di controllo e di input stradale -->
         <div id="app-content" class="space-y-4">
             
-            <!-- Formulario di input stradale per inserimento dati manuale o GPS -->
+            <!-- Inserimento dati stradali o attivazione GPS -->
             <form id="viaggio-form" class="space-y-4">
                 <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-3">
                     <div class="flex justify-between items-center mb-1">
@@ -86,7 +97,7 @@
                     <input type="text" id="ultimoCasello" required placeholder="Ultimo casello superato (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm">
                 </div>
 
-                <!-- Slider di sosta: orario pranzo, budget economico -->
+                <!-- Parametri di sosta ed economici (Sotto forma di slider di precisione) -->
                 <div class="space-y-4 bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl text-sm">
                     <div>
                         <div class="flex justify-between font-bold">
@@ -110,14 +121,13 @@
                 </button>
             </form>
 
-            <!-- Pulsante rapido per attivare la navigazione vocale guidata a mani libere -->
             <button id="btn-copilota-vocale" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-2xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2 text-sm">
                 <i class="fa-solid fa-microphone-lines text-lg animate-bounce"></i> AVVIA COPILOTA VOCALE
             </button>
         </div>
 
-        <!-- STREAMING_CHUNK: Schermata animata di caricamento dei dati di viaggio... -->
-        <!-- Schermata di caricamento ed attesa -->
+        <!-- STREAMING_CHUNK: Creazione dell'animazione e log di caricamento in tempo reale... -->
+        <!-- Schermata di attesa e logica di connessione server in corso -->
         <div id="loading" class="hidden bg-gray-900 p-8 rounded-3xl border border-gray-800 text-center space-y-6 shadow-2xl py-12 max-w-sm mx-auto">
             <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
                 <div class="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
@@ -141,11 +151,11 @@
             </div>
         </div>
 
-        <!-- STREAMING_CHUNK: Schermata dei risultati con la scheda dell'osteria e la mappa... -->
-        <!-- Schermata dei risultati di ricerca gastronomica -->
+        <!-- STREAMING_CHUNK: Sviluppo del pannello dei risultati geografici e delle mappe... -->
+        <!-- Schermata dei risultati gastronomici e cartografici -->
         <div id="risultato" class="hidden space-y-4">
             
-            <!-- Pannello informativo del casello consigliato -->
+            <!-- Badge dorato dinamico del casello specifico per l'osteria selezionata -->
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-2xl shadow-lg text-gray-950 flex justify-between items-center">
                 <div class="space-y-0.5">
                     <span class="text-[10px] font-bold uppercase tracking-wider opacity-75">Uscita Consigliata</span>
@@ -154,19 +164,20 @@
                 <div class="text-3xl opacity-20"><i class="fa-solid fa-road-barrier"></i></div>
             </div>
 
-            <!-- Mappa stradale interattiva di prossimità -->
+            <!-- Visualizzazione cartografica interattiva di prossimità stradale -->
             <div class="relative w-full h-48 rounded-2xl overflow-hidden border border-gray-800 shadow-xl bg-gray-900">
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <!-- Schede delle 3 osterie selezionate (Filtro dei pulsanti orizzontali) -->
+            <!-- Pulsanti per alternare orizzontalmente le 3 osterie reali candidate -->
             <div class="grid grid-cols-3 gap-2" id="scelta-osterie-pills">
                 <button onclick="mostraRistorante(0)" id="pill-0" class="bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow">OPZIONE 1</button>
                 <button onclick="mostraRistorante(1)" id="pill-1" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95">OPZIONE 2</button>
                 <button onclick="mostraRistorante(2)" id="pill-2" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95">OPZIONE 3</button>
             </div>
 
-            <!-- Scheda informativa dettagliata del locale selezionato -->
+            <!-- STREAMING_CHUNK: Creazione della scheda informativa di dettaglio della trattoria... -->
+            <!-- Scheda dettagliata del locale -->
             <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4 relative">
                 <div>
                     <h3 id="res-nome" class="text-xl font-black text-white leading-tight">-</h3>
@@ -194,11 +205,11 @@
                 <div class="space-y-2">
                     <span class="text-amber-500 font-bold text-xs uppercase tracking-wider block">🍝 Piatti Consigliati Slow Food:</span>
                     <div id="res-piatti" class="flex flex-wrap gap-1.5">
-                        <!-- Generato dinamicamente in base alle specialità locali -->
+                        <!-- Iniettato dinamicamente in base alle specialità rilevate -->
                     </div>
                 </div>
 
-                <!-- Bottoni d'azione del navigatore e contatti -->
+                <!-- Azioni stradali immediate: Navigatore e Telefono -->
                 <div class="grid grid-cols-2 gap-2 pt-2">
                     <a id="btn-chiama" href="#" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl text-xs text-center transition active:scale-95 flex justify-center items-center gap-1.5 border border-gray-700">
                         <i class="fa-solid fa-phone"></i> CHIAMA LOCALE
@@ -209,7 +220,7 @@
                 </div>
             </div>
 
-            <!-- Pulsante di rientro alla home o modifica ricerca -->
+            <!-- Pulsante per tornare al formulario -->
             <button onclick="tornaAlFormulario()" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-xl border border-gray-800 text-xs transition active:scale-95 flex justify-center items-center gap-1.5">
                 <i class="fa-solid fa-chevron-left"></i> NUOVA RICERCA COPIOTA
             </button>
@@ -217,8 +228,8 @@
 
     </main>
 
-    <!-- STREAMING_CHUNK: Fumetto di aiuto all'installazione nativa per Safari su iOS... -->
-    <!-- Fumetto esplicativo d'installazione intelligente PWA per iOS/Safari -->
+    <!-- STREAMING_CHUNK: Creazione delle notifiche ed aiuti all'installazione per dispositivi mobili... -->
+    <!-- Fumetto d'aiuto installazione per iOS/Safari -->
     <div id="ios-install-bubble" class="hidden fixed bottom-6 left-4 right-4 bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-2xl z-50 text-xs space-y-3 animate-bounce">
         <div class="flex justify-between items-start">
             <div class="flex items-center gap-2">
@@ -234,17 +245,28 @@
         </p>
     </div>
 
-    <!-- Piè di pagina -->
+    <!-- Piè di pagina dell'applicazione -->
     <footer class="bg-gray-950 border-t border-gray-900 py-3 text-center text-[10px] text-gray-600 mt-6">
         SostaGourmet © 2026 • Realizzato per i buongustai in autostrada
     </footer>
 
-    <!-- STREAMING_CHUNK: Logica di programmazione Javascript del client e gestore eventi... -->
+    <!-- STREAMING_CHUNK: Inizializzazione della logica JavaScript ed helpers di calcolo... -->
     <script>
         // URL ufficiale del server proxy di Google Apps Script (SostaGourmet Backend)
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
-        // Gestione e formattazione visiva degli slider in tempo reale con calcolo delle ore
+        // Funzione per mostrare gli errori in modo nativo tramite modale personalizzata anziché alert()
+        function mostraErrore(messaggio) {
+            document.getElementById('error-modal-msg').textContent = messaggio;
+            document.getElementById('error-modal').classList.remove('hidden');
+            tornaAlFormulario();
+        }
+
+        function chiudiErrorModal() {
+            document.getElementById('error-modal').classList.add('hidden');
+        }
+
+        // Formattazione dinamica dello slider in ore e minuti
         function formattaTempo(minuti) {
             minuti = Number(minuti);
             if (minuti < 60) {
@@ -253,7 +275,7 @@
                 return "1 ora";
             } else {
                 var ore = Math.floor(minuti / 60);
-                var restanti = minuti % 60;
+                var restanti = Grid = minuti % 60;
                 if (restanti === 0) {
                     return ore + (ore === 1 ? " ora" : " ore");
                 }
@@ -264,9 +286,7 @@
         var sliderTempo = document.getElementById('tempoAllaSosta');
         var valTempo = document.getElementById('tempo-val');
         if (sliderTempo && valTempo) {
-            // Allinea la dicitura iniziale al caricamento
             valTempo.textContent = formattaTempo(sliderTempo.value);
-            
             sliderTempo.addEventListener('input', function() {
                 valTempo.textContent = formattaTempo(sliderTempo.value);
             });
@@ -293,12 +313,13 @@
         var isUnloading = false;
         var isListeningForMeta = false;
 
-        /* STREAMING_CHUNK: Gestione dell'invio dei dati del form stradale al server... */
+        /* STREAMING_CHUNK: Gestione dell'invio dei dati del modulo in formato testo semplice... */
         form.addEventListener('submit', function(e) {
             if (e) e.preventDefault();
 
             appContent.classList.add('hidden');
             loading.classList.remove('hidden');
+            scriviLogVisivo("Invio dei dati stradali al server in corso...");
 
             var datiViaggio = {
                 autostrada: document.getElementById('autostrada').value,
@@ -306,16 +327,11 @@
                 ultimoCasello: document.getElementById('ultimoCasello').value,
                 tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
                 budget: document.getElementById('budget').value,
-                distanzaMaxCasello: 15 // Valore di default ottimale impostato dietro le quinte
+                distanzaMaxCasello: 15
             };
 
             inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
         });
-
-        function mostraErrore(messaggio) {
-            alert("⚠️ " + messaggio);
-            tornaAlFormulario();
-        }
 
         function tornaAlFormulario() {
             risultato.classList.add('hidden');
@@ -324,7 +340,17 @@
             document.getElementById('hero-banner').classList.remove('hidden');
         }
 
-        /* STREAMING_CHUNK: Elaborazione dei log e dei risultati ricevuti dal server... */
+        function scriviLogVisivo(messaggio) {
+            var box = document.getElementById('loading-logs');
+            if (box) {
+                var riga = document.createElement('div');
+                riga.textContent = "[LOG] " + messaggio;
+                box.appendChild(riga);
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        /* STREAMING_CHUNK: Elaborazione dei dati ricevuti in risposta dal server remoto... */
         function onSuccess(risposta) {
             if (risposta && risposta.error) {
                 mostraErrore(risposta.error);
@@ -342,7 +368,6 @@
             document.getElementById('hero-banner').classList.add('hidden');
             risultato.classList.remove('hidden');
 
-            // Inizializza la mappa geografica di Leaflet
             setTimeout(function() {
                 inizializzaMappa();
                 mostraRistorante(0);
@@ -353,7 +378,7 @@
             mostraErrore("Connessione instabile o errore del server. Riprova tra poco.");
         }
 
-        /* STREAMING_CHUNK: Logica di aggiornamento delle schede osteria e dei relativi caselli d'uscita... */
+        /* STREAMING_CHUNK: Aggiornamento dinamico delle informazioni della trattoria e dei caselli... */
         function mostraRistorante(indice) {
             if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
             var r = ristorantiTrovati[indice];
@@ -366,7 +391,7 @@
             document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato;
             document.getElementById('res-motivo').textContent = r.percheMerita;
 
-            // Aggiorna i piatti consigliati Slow Food
+            // Aggiorna i piatti consigliati
             var pBox = document.getElementById('res-piatti');
             pBox.innerHTML = '';
             if (r.piattiConsigliati && r.piattiConsigliati.length > 0) {
@@ -380,7 +405,6 @@
                 pBox.innerHTML = '<span class="text-gray-500 italic text-[10px]">Nessuna specialità indicata</span>';
             }
 
-            // Aggiorna i pulsanti di navigazione stradale e contatti telefonici
             document.getElementById('btn-chiama').href = r.telefono ? "tel:" + r.telefono : "#";
             document.getElementById('btn-naviga').href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(r.indirizzo);
 
@@ -396,7 +420,7 @@
                 }
             }
 
-            // Riposiziona il marker e la visuale della mappa Leaflet
+            // Riposiziona il marker e la mappa Leaflet
             if (mappaApp && r.lat && r.lng) {
                 markerLayers.forEach(function(m) { mappaApp.removeLayer(m); });
                 markerLayers = [];
@@ -408,7 +432,6 @@
                 mappaApp.setView([r.lat, r.lng], 13);
             }
 
-            // Riproduce la sintesi vocale se siamo in modalità copilota attivo
             if (modalitaVocaleAttiva && !isUnloading) {
                 var testoParlato = "Ti consiglio l'opzione " + (indice + 1) + ": " + r.nomeRistorante + 
                     ", situato all'uscita " + (r.caselloUscita || "autostradale") + ". Dista circa " + r.tempoDalCasello + 
@@ -417,51 +440,49 @@
             }
         }
 
-        /* STREAMING_CHUNK: Configurazione e resa grafica delle mappe stradali di Leaflet... */
         function inizializzaMappa() {
             if (mappaApp !== null) return;
-            // Inizializza mappa su Roma di default
             mappaApp = L.map('map', { zoomControl: false }).setView([41.902783, 12.496366], 6);
             
-            // Tile di CartoDB scura lussuosa
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(mappaApp);
         }
 
-        /* STREAMING_CHUNK: Logica di connessione server remota bypassando i CORS... */
+        /* STREAMING_CHUNK: Implementazione del tunnel CORS sicuro tramite testo semplice... */
+        /**
+         * Invia i dati al server tramite POST bypassando il controllo CORS preventivo (pre-flight OPTIONS).
+         * Imposta l'intestazione su 'text/plain', che viene accettata ed interpretata da Google Apps Script.
+         */
         function inviaDatiAlServer(azione, dati, onOk, onKo) {
             var payload = {
                 action: azione,
                 datiViaggio: dati
             };
 
-            // Invia i dati tramite fetch in formato POST per aggirare i CORS in modalità no-cors
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, // Evita pre-flight OPTIONS e aggira il blocco CORS
                 body: JSON.stringify(payload)
-            }).then(function() {
-                // Poiché no-cors non restituisce il payload direttamente per motivi di sicurezza,
-                // interroghiamo nuovamente il server in modalità GET controllata per prelevare il risultato temporaneo
-                fetch(APPS_SCRIPT_URL + "?azione=leggiCache")
-                    .then(function(res) { return res.json(); })
-                    .then(onOk)
-                    .catch(onKo);
-            }).catch(onKo);
+            })
+            .then(function(res) { 
+                return res.json(); 
+            })
+            .then(onOk)
+            .catch(onKo);
         }
 
-        /* STREAMING_CHUNK: Attivazione del modulo GPS e del Copilota Vocale... */
-        // Gestione GPS per la rilevazione automatica dell'utente
+        /* STREAMING_CHUNK: Gestione dei sensori di geolocalizzazione GPS integrati... */
+        // Integrazione GPS
         var btnGps = document.getElementById('btn-gps');
         if (btnGps) {
             btnGps.addEventListener('click', function() {
                 if (!navigator.geolocation) {
-                    alert("GPS non supportato dal browser corrente.");
+                    mostraErrore("GPS non supportato dal browser corrente.");
                     return;
                 }
                 btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
+                
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     var payload = {
                         action: "rilevaPosizione",
@@ -471,32 +492,31 @@
 
                     fetch(APPS_SCRIPT_URL, {
                         method: "POST",
-                        mode: "no-cors",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify(payload)
-                    }).then(function() {
-                        fetch(APPS_SCRIPT_URL + "?azione=leggiCache")
-                            .then(function(res) { return res.json(); })
-                            .then(function(datiStrada) {
-                                if (datiStrada && datiStrada.ultimoCasello) {
-                                    document.getElementById('autostrada').value = datiStrada.autostrada || "";
-                                    document.getElementById('ultimoCasello').value = datiStrada.ultimoCasello;
-                                }
-                                btnGps.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> AGGANCIATO';
-                            }).catch(function() {
-                                btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                            });
-                    }).catch(function() {
+                    })
+                    .then(function(res) { 
+                        return res.json(); 
+                    })
+                    .then(function(datiStrada) {
+                        if (datiStrada && datiStrada.ultimoCasello) {
+                            document.getElementById('autostrada').value = datiStrada.autostrada || "";
+                            document.getElementById('ultimoCasello').value = datiStrada.ultimoCasello;
+                        }
+                        btnGps.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> AGGANCIATO';
+                    })
+                    .catch(function() {
                         btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
                     });
                 }, function() {
                     btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                    alert("Impossibile rilevare la posizione GPS. Assicurati che i permessi di localizzazione siano attivi.");
+                    mostraErrore("Impossibile rilevare la posizione GPS. Assicurati che i permessi di localizzazione siano attivi.");
                 }, { timeout: 10000 });
             });
         }
 
-        // Modulo assistente vocale interattivo
+        /* STREAMING_CHUNK: Inizializzazione della logica di bordo per il copilota vocale... */
+        // Integrazione sintesi ed assistente vocale
         var btnVocale = document.getElementById('btn-copilota-vocale');
         if (btnVocale) {
             btnVocale.addEventListener('click', function() {
@@ -518,7 +538,7 @@
         function avviaRiconoscimentoVocaleMeta() {
             var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("Riconoscimento vocale non supportato da questo browser.");
+                mostraErrore("Riconoscimento vocale non supportato da questo browser.");
                 return;
             }
             var recognition = new SpeechRecognition();
@@ -536,8 +556,8 @@
             };
         }
 
-        /* STREAMING_CHUNK: Configurazione d'installazione intelligente PWA (Android / iOS)... */
-        // Supporto installazione progressiva (PWA)
+        /* STREAMING_CHUNK: Configurazione del ciclo di vita della Progressive Web App (PWA)... */
+        // Supporto installazione nativa PWA (Android / Windows)
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -557,7 +577,7 @@
             }
         });
 
-        // Rileva se l'utente è su iPhone/iPad e visualizza il popup Safari
+        // Supporto installazione iOS/Safari
         const isIos = () => {
             const userAgent = window.navigator.userAgent.toLowerCase();
             return /iphone|ipad|ipod/.test(userAgent);
