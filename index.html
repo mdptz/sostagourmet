@@ -1,31 +1,34 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <!-- Tracciatore di monitoraggio di Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DV0Q2T1WHH"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-DV0Q2T1WHH');
     </script>
 
+    <!-- Meta-tag dell'applicazione web progressiva (PWA) e visualizzazione responsive -->
     <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SostaGourmet - Osterie al Casello</title>
+    
+    <!-- Tailwind CSS e libreria di icone professionali FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Libreria cartografica interattiva Leaflet.js -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
-        /* Risolve eventuali conflitti di visualizzazione dell'indice z di Leaflet */
         #map {
             z-index: 10;
         }
-        /* Effetto onda pulsante per l'assistente vocale durante l'ascolto attivo */
+        /* Animazione pulsante per l'ascolto dell'assistente vocale a mani libere */
         @keyframes pulse-ring {
             0% { transform: scale(0.95); opacity: 1; }
             50% { transform: scale(1.1); opacity: 0.5; }
@@ -38,6 +41,7 @@
 </head>
 <body class="bg-gray-950 text-white font-sans min-h-screen flex flex-col justify-between p-4">
 
+    <!-- Intestazione premium dell'applicazione SostaGourmet -->
     <header class="text-center py-4 flex flex-col items-center">
         <h1 class="text-3xl font-black text-amber-500 tracking-wide flex items-center gap-2">
             <i class="fa-solid fa-car-side"></i> SOSTA GOURMET
@@ -45,8 +49,10 @@
         <p class="text-gray-400 text-xs mt-1">Trova la vera osteria tipica vicino al tuo casello.</p>
     </header>
 
+    <!-- Contenitore principale dell'applicazione mobile -->
     <main id="app-content" class="flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
         
+        <!-- Banner per l'installazione nativa come PWA su Android, iOS e PC -->
         <div id="install-banner" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 p-4 rounded-2xl shadow-2xl flex flex-col justify-between items-center gap-3 border border-amber-400/30">
             <div class="flex items-center gap-3 text-left w-full">
                 <div class="text-2xl text-gray-950 flex-shrink-0">
@@ -67,6 +73,7 @@
             </div>
         </div>
 
+        <!-- Pannello di controllo del Copilota Vocale a Mani Libere -->
         <div class="bg-gradient-to-br from-amber-500/20 to-gray-900 rounded-2xl border border-amber-500/30 p-5 shadow-xl flex flex-col items-center text-center space-y-3">
             <div id="voice-icon-container" class="w-14 h-14 rounded-full bg-amber-500 text-gray-950 flex items-center justify-center text-2xl shadow-lg transition-all duration-300">
                 <i id="voice-icon" class="fa-solid fa-microphone"></i>
@@ -83,6 +90,7 @@
             </p>
         </div>
 
+        <!-- Formulario di input stradale per inserimento dati manuale o GPS -->
         <form id="viaggio-form" class="space-y-4">
             <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-3">
                 <div class="flex justify-between items-center mb-1">
@@ -98,6 +106,7 @@
                 <input type="text" id="ultimoCasello" required placeholder="Ultimo casello superato (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300">
             </div>
 
+            <!-- Slider di sosta: orario pranzo, deviazione dal casello, budget economico -->
             <div class="space-y-4 bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl text-sm">
                 <div>
                     <div class="flex justify-between font-bold">
@@ -130,26 +139,32 @@
         </form>
     </main>
 
+    <!-- Schermata di caricamento e attesa dei risultati -->
     <div id="loading" class="hidden flex-grow flex flex-col items-center justify-center text-center space-y-4 max-w-md mx-auto">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500"></div>
         <p class="text-lg font-bold">Interrogando le guide locali...</p>
         <p class="text-xs text-gray-400">Cerco le migliori osterie tipiche e verificate sul tuo percorso.</p>
     </div>
 
+    <!-- Contenitore dei Risultati (Mappa cartografica + Schede osterie dinamiche) -->
     <div id="risultato" class="hidden flex-grow flex flex-col justify-center max-w-md mx-auto w-full space-y-4">
         
+        <!-- Elemento Mappa Leaflet interattivo -->
         <div id="map" class="h-60 w-full rounded-2xl border border-gray-800 shadow-xl overflow-hidden"></div>
 
+        <!-- Badge dinamico e indipendente del Casello di Uscita Consigliato per ciascuna Trattoria -->
         <div class="text-center">
-            <span id="res-casello" class="bg-amber-500 text-gray-950 text-xs font-black uppercase px-3 py-1.5 rounded-full tracking-wider shadow">CASELLO_CONSIGLIATO</span>
+            <span id="res-casello" class="bg-amber-500 text-gray-950 text-xs font-black uppercase px-3 py-1.5 rounded-full tracking-wider shadow">DETERMINAZIONE IN CORSO...</span>
         </div>
 
+        <!-- Selettore orizzontale a schede (Tab) per visualizzare le 3 opzioni disponibili -->
         <div class="grid grid-cols-3 gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs font-bold text-center">
             <button type="button" id="tab-0" onclick="mostraRistorante(0)" class="py-2.5 rounded-lg bg-amber-500 text-gray-950 transition-all duration-200 font-bold">Opzione 1</button>
             <button type="button" id="tab-1" onclick="mostraRistorante(1)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold">Opzione 2</button>
             <button type="button" id="tab-2" onclick="mostraRistorante(2)" class="py-2.5 rounded-lg text-gray-400 hover:text-white transition-all duration-200 font-bold">Opzione 3</button>
         </div>
 
+        <!-- Scheda descrittiva di dettaglio dell'osteria selezionata -->
         <div class="bg-gray-900 rounded-2xl border border-gray-800 p-5 shadow-2xl space-y-3">
             <div>
                 <h2 id="res-nome" class="text-xl font-black text-amber-500">-</h2>
@@ -172,6 +187,7 @@
                 <span id="res-prezzo" class="text-amber-500 text-sm">-</span>
             </div>
 
+            <!-- Pulsanti di interazione rapida: Telefona e Naviga (Google Maps) -->
             <div class="grid grid-cols-2 gap-2 pt-1">
                 <a id="btn-chiama" href="#" class="bg-emerald-600 hover:bg-emerald-700 text-white text-center font-bold py-3 rounded-xl flex justify-center items-center gap-1.5 text-base">
                     <i class="fa-solid fa-phone"></i> CHIAMA
@@ -187,11 +203,13 @@
         </button>
     </div>
 
+    <!-- Banner fluttuante di notifica degli errori di rete o GPS -->
     <div id="error-banner" class="hidden fixed bottom-4 left-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-2xl flex justify-between items-center z-50">
         <span id="error-text" class="text-xs font-bold"></span>
         <button onclick="document.getElementById('error-banner').classList.add('hidden')" class="text-white ml-2"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
+    <!-- Piè di pagina dell'applicazione -->
     <footer class="text-center text-[10px] text-gray-500 py-3 mt-4 space-y-1 border-t border-gray-900/40">
         <div>SostaGourmet © 2026 - by mdptz</div>
         <div class="flex items-center justify-center gap-1 text-gray-600">
@@ -202,10 +220,10 @@
     </footer>
 
     <script>
-        // Configura qui la tua URL della Web App di Google Apps Script
+        // URL ufficiale del server proxy di Google Apps Script (SostaGourmet Backend)
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
-        // Gestione degli slider grafici
+        // Gestione e formattazione visiva degli slider in tempo reale
         function setupSlider(sliderId, valId, suffix) {
             var slider = document.getElementById(sliderId);
             var val = document.getElementById(valId);
@@ -494,7 +512,7 @@
                 }
             }
 
-            // AGGIORNAMENTO CASELLO DI USCITA DEDICATO E INDIPENDENTE
+            // AGGIORNAMENTO CASELLO DI USCITA DEDICATO E INDIPENDENTE PER CIASCUNA TRATTORIA
             var caselloLabel = r.caselloUscita ? "ESCI A: " + r.caselloUscita.toUpperCase() : "USCITA PIÙ VICINA";
             document.getElementById('res-casello').textContent = caselloLabel;
 
