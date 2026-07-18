@@ -266,12 +266,12 @@
         function formattaTempo(minuti) {
             minuti = Number(minuti);
             if (minuti < 60) {
-                return minutes + " minuti";
+                return minuti + " minuti";
             } else if (minuti === 60) {
                 return "1 ora";
             } else {
                 var ore = Math.floor(minuti / 60);
-                var restanti = minuti % 60;
+                var restanti = minutes % 60;
                 if (restanti === 0) {
                     return ore + (ore === 1 ? " ora" : " ore");
                 }
@@ -359,6 +359,47 @@
             }
         }
 
+        // AGGIUNTE E CORRETTE: Rimesse le risposte del server precedentemente saltate
+        function onSuccess(risposta) {
+            if (risposta && risposta.error) {
+                mostraErrore(risposta.error);
+                return;
+            }
+
+            if (!risposta || !risposta.ristoranti || risposta.ristoranti.length === 0) {
+                mostraErrore("Nessun locale Slow Food trovato per questo itinerario. Modifica i parametri di sosta.");
+                return;
+            }
+
+            ristorantiTrovati = risposta.ristoranti;
+            
+            // Aggiorna dinamicamente il testo delle pillole con il nome reale delle osterie
+            for (var i = 0; i < 3; i++) {
+                var pill = document.getElementById('pill-' + i);
+                if (pill) {
+                    if (ristorantiTrovati[i]) {
+                        pill.textContent = pulisciNomePill(ristorantiTrovati[i].nomeRistorante);
+                        pill.classList.remove('hidden');
+                    } else {
+                        pill.classList.add('hidden'); 
+                    }
+                }
+            }
+
+            loading.classList.add('hidden');
+            document.getElementById('hero-banner').classList.add('hidden');
+            risultato.classList.remove('hidden');
+
+            setTimeout(function() {
+                inizializzaMappa();
+                mostraRistorante(0);
+            }, 100);
+        }
+
+        function onFailure(errore) {
+            mostraErrore("Connessione instabile o errore del server. Riprova tra poco.");
+        }
+
         function mostraRistorante(indice) {
             if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
             var r = ristorantiTrovati[indice];
@@ -416,7 +457,7 @@
                 var testoParlato = "Ti consiglio l'opzione " + (indice + 1) + ": " + r.nomeRistorante + 
                     ", situato all'uscita " + (r.caselloUscita || "autostradale") + ". Dista circa " + r.tempoDalCasello + 
                     " minuti dal casello. " + r.percheMerita;
-                pronunciaVoce(testoParlato); // Corretto il vecchio bug 'testoLanciato' -> 'testoParlato'
+                pronunciaVoce(testoParlato); 
             }
         }
 
@@ -452,7 +493,6 @@
 
         /**
          * Funzione Asincrona indipendente per la Geolocalizzazione GPS.
-         * Ritorna una Promise per permettere al Copilota Vocale di attendere il caricamento dei dati stradali.
          */
         function eseguiGeolocalizzazioneGPS() {
             return new Promise(function(resolve, reject) {
@@ -508,7 +548,7 @@
             });
         }
 
-        // Integrazione sintesi ed assistente vocale intelligente (Con controllo preventivo asincrono del GPS)
+        // Assistente vocale asincrono con controllo preventivo del GPS
         var btnVocale = document.getElementById('btn-copilota-vocale');
         if (btnVocale) {
             btnVocale.addEventListener('click', async function() {
@@ -517,14 +557,14 @@
                 var autostradaAttuale = document.getElementById('autostrada').value;
                 var caselloAttuale = document.getElementById('ultimoCasello').value;
 
-                // BUG RESOLVED: Se mancano i dati stradali di base, il copilota fa partire prima il GPS in automatico ed aspetta la risposta
+                // Se mancano i dati stradali di base, il copilota fa partire prima il GPS in automatico ed aspetta la risposta
                 if (!autostradaAttuale || !caselloAttuale) {
                     pronunciaVoce("Avvio la localizzazione GPS del veicolo prima di procedere.");
                     try {
                         await eseguiGeolocalizzazioneGPS();
                     } catch (erroreGps) {
                         pronunciaVoce("Impossibile agganciare il GPS. Inserisci i dati a mano prima di parlare.");
-                        return; // Interrompe il flusso vocale se il GPS fallisce e i campi restano vuoti
+                        return; 
                     }
                 }
 
