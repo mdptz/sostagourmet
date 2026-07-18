@@ -248,10 +248,21 @@
     </footer>
 
     <script>
-        // URL ufficiale del server proxy di Google Apps Script (SostaGourmet Backend)
+        // ==========================================
+        // 1. CONFIGURAZIONI E STATO GLOBALE
+        // ==========================================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
-        // Funzione per mostrare gli errori in modo nativo tramite modale personalizzata anziché alert()
+        var ristorantiTrovati = [];
+        var mappaApp = null;
+        var markerLayers = [];
+        var modalitaVocaleAttiva = false;
+        var isUnloading = false;
+        var isListeningForMeta = false;
+
+        // ==========================================
+        // 2. FUNZIONI CORE E RISPOSTE SERVER (Dichiarate subito)
+        // ==========================================
         function mostraErrore(messaggio) {
             document.getElementById('error-modal-msg').textContent = messaggio;
             document.getElementById('error-modal').classList.remove('hidden');
@@ -262,90 +273,10 @@
             document.getElementById('error-modal').classList.add('hidden');
         }
 
-        // Formattazione dinamica dello slider in ore e minuti
-        function formattaTempo(minuti) {
-            minuti = Number(minuti);
-            if (minuti < 60) {
-                return minuti + " minuti";
-            } else if (minuti === 60) {
-                return "1 ora";
-            } else {
-                var ore = Math.floor(minuti / 60);
-                var restanti = minutes % 60;
-                if (restanti === 0) {
-                    return ore + (ore === 1 ? " ora" : " ore");
-                }
-                return ore + (ore === 1 ? " ora" : " ore") + " e " + restanti + " min";
-            }
-        }
-
-        // Funzione per abbreviare e pulire i nomi dei locali sui pulsanti (Pills)
-        function pulisciNomePill(nome) {
-            if (!nome) return "SOSTA";
-            var n = nome.trim();
-            // Rimuove prefissi comuni insensibile al maiuscolo/minuscolo
-            n = n.replace(/^(Trattoria|Osteria|Ristorante|Antica Trattoria|Antica Osteria|Antico Ristorante|Albergo|Da|Al|All'|La|Il)\s+/i, "");
-            
-            // Se ancora troppo lungo, taglia a 11 caratteri e aggiunge puntini
-            if (n.length > 11) {
-                return n.substring(0, 10).trim() + "..";
-            }
-            return n.toUpperCase();
-        }
-
-        var sliderTempo = document.getElementById('tempoAllaSosta');
-        var valTempo = document.getElementById('tempo-val');
-        if (sliderTempo && valTempo) {
-            valTempo.textContent = formattaTempo(sliderTempo.value);
-            sliderTempo.addEventListener('input', function() {
-                valTempo.textContent = formattaTempo(sliderTempo.value);
-            });
-        }
-
-        var sliderBudget = document.getElementById('budget');
-        var valBudget = document.getElementById('budget-val');
-        if (sliderBudget && valBudget) {
-            sliderBudget.addEventListener('input', function() {
-                valBudget.textContent = sliderBudget.value + ' €';
-            });
-        }
-
-        var form = document.getElementById('viaggio-form');
-        var appContent = document.getElementById('app-content');
-        var loading = document.getElementById('loading');
-        var risultato = document.getElementById('risultato');
-
-        var ristorantiTrovati = [];
-        var mappaApp = null;
-        var markerLayers = [];
-
-        var modalitaVocaleAttiva = false;
-        var isUnloading = false;
-        var isListeningForMeta = false;
-
-        form.addEventListener('submit', function(e) {
-            if (e) e.preventDefault();
-
-            appContent.classList.add('hidden');
-            loading.classList.remove('hidden');
-            scriviLogVisivo("Invio dei dati stradali al server in corso...");
-
-            var datiViaggio = {
-                autostrada: document.getElementById('autostrada').value,
-                meta: document.getElementById('meta').value,
-                ultimoCasello: document.getElementById('ultimoCasello').value,
-                tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
-                budget: document.getElementById('budget').value,
-                distanzaMaxCasello: 15
-            };
-
-            inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
-        });
-
         function tornaAlFormulario() {
-            risultato.classList.add('hidden');
-            loading.classList.add('hidden');
-            appContent.classList.remove('hidden');
+            document.getElementById('risultato').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
             document.getElementById('hero-banner').classList.remove('hidden');
         }
 
@@ -359,21 +290,56 @@
             }
         }
 
-        // AGGIUNTE E CORRETTE: Rimesse le risposte del server precedentemente saltate
+        function formattaTempo(minuti) {
+            minuti = Number(minuti);
+            if (minuti < 60) {
+                return minuti + " minuti";
+            } else if (minuti === 60) {
+                return "1 ora";
+            } else {
+                var ore = Math.floor(minuti / 60);
+                var restanti = minuti % 60; // FIX: Cambiato da 'minutes' a 'minuti'
+                if (restanti === 0) {
+                    return ore + (ore === 1 ? " ora" : " ore");
+                }
+                return ore + (ore === 1 ? " ora" : " ore") + " e " + restanti + " min";
+            }
+        }
+
+        function pulisciNomePill(nome) {
+            if (!nome) return "SOSTA";
+            var n = nome.trim();
+            n = n.replace(/^(Trattoria|Osteria|Ristorante|Antica Trattoria|Antica Osteria|Antico Ristorante|Albergo|Da|Al|All'|La|Il)\s+/i, "");
+            if (n.length > 11) {
+                return n.substring(0, 10).trim() + "..";
+            }
+            return n.toUpperCase();
+        }
+
+        function inviaDatiAlServer(azione, dati, onOk, onKo) {
+            var payload = { action: azione, datiViaggio: dati };
+            fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                body: JSON.stringify(payload)
+            })
+            .then(function(res) { return res.json(); })
+            .then(onOk)
+            .catch(onKo);
+        }
+
         function onSuccess(risposta) {
             if (risposta && risposta.error) {
                 mostraErrore(risposta.error);
                 return;
             }
-
             if (!risposta || !risposta.ristoranti || risposta.ristoranti.length === 0) {
-                mostraErrore("Nessun locale Slow Food trovato per questo itinerario. Modifica i parametri di sosta.");
+                mostraErrore("Nessun locale Slow Food trovato per questo tentativo. Modifica i parametri di sosta.");
                 return;
             }
 
             ristorantiTrovati = risposta.ristoranti;
             
-            // Aggiorna dinamicamente il testo delle pillole con il nome reale delle osterie
             for (var i = 0; i < 3; i++) {
                 var pill = document.getElementById('pill-' + i);
                 if (pill) {
@@ -386,9 +352,9 @@
                 }
             }
 
-            loading.classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
             document.getElementById('hero-banner').classList.add('hidden');
-            risultato.classList.remove('hidden');
+            document.getElementById('risultato').classList.remove('hidden');
 
             setTimeout(function() {
                 inizializzaMappa();
@@ -404,7 +370,6 @@
             if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
             var r = ristorantiTrovati[indice];
 
-            // Aggiorna dinamicamente l'insegna del casello d'uscita specifico calcolato dal server per questa osteria
             document.getElementById('res-casello').textContent = r.caselloUscita || "USCITA VICINA";
             document.getElementById('res-nome').textContent = r.nomeRistorante;
             document.getElementById('res-indirizzo').innerHTML = '<i class="fa-solid fa-map-location-dot text-amber-500"></i> ' + r.indirizzo;
@@ -412,7 +377,6 @@
             document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato;
             document.getElementById('res-motivo').textContent = r.percheMerita;
 
-            // Aggiorna i piatti consigliati
             var pBox = document.getElementById('res-piatti');
             pBox.innerHTML = '';
             if (r.piattiConsigliati && r.piattiConsigliati.length > 0) {
@@ -429,7 +393,6 @@
             document.getElementById('btn-chiama').href = r.telefono ? "tel:" + r.telefono : "#";
             document.getElementById('btn-naviga').href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(r.nomeRistorante + ", " + r.indirizzo);
 
-            // Cambia l'aspetto grafico dei pulsanti di selezione (Pills) senza sovrascrivere il testo
             for (var i = 0; i < 3; i++) {
                 var pill = document.getElementById('pill-' + i);
                 if (pill) {
@@ -441,15 +404,12 @@
                 }
             }
 
-            // Riposiziona il marker e la mappa Leaflet
             if (mappaApp && r.lat && r.lng) {
                 markerLayers.forEach(function(m) { mappaApp.removeLayer(m); });
                 markerLayers = [];
-
                 var marker = L.marker([r.lat, r.lng]).addTo(mappaApp);
                 marker.bindPopup("<b class='text-gray-950'>" + r.nomeRistorante + "</b>").openPopup();
                 markerLayers.push(marker);
-
                 mappaApp.setView([r.lat, r.lng], 13);
             }
 
@@ -464,36 +424,11 @@
         function inizializzaMappa() {
             if (mappaApp !== null) return;
             mappaApp = L.map('map', { zoomControl: false }).setView([41.902783, 12.496366], 6);
-            
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(mappaApp);
         }
 
-        /**
-         * Invia i dati al server tramite POST bypassando il controllo CORS preventivo (pre-flight OPTIONS).
-         */
-        function inviaDatiAlServer(azione, dati, onOk, onKo) {
-            var payload = {
-                action: azione,
-                datiViaggio: dati
-            };
-
-            fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                body: JSON.stringify(payload)
-            })
-            .then(function(res) { 
-                return res.json(); 
-            })
-            .then(onOk)
-            .catch(onKo);
-        }
-
-        /**
-         * Funzione Asincrona indipendente per la Geolocalizzazione GPS.
-         */
         function eseguiGeolocalizzazioneGPS() {
             return new Promise(function(resolve, reject) {
                 if (!navigator.geolocation) {
@@ -501,25 +436,17 @@
                     reject("GPS non supportato");
                     return;
                 }
-
                 var btnGps = document.getElementById('btn-gps');
                 if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
 
                 navigator.geolocation.getCurrentPosition(function(pos) {
-                    var payload = {
-                        action: "rilevaPosizione",
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude
-                    };
-
+                    var payload = { action: "rilevaPosizione", lat: pos.coords.latitude, lon: pos.coords.longitude };
                     fetch(APPS_SCRIPT_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify(payload)
                     })
-                    .then(function(res) { 
-                        return res.json(); 
-                    })
+                    .then(function(res) { return res.json(); })
                     .then(function(datiStrada) {
                         if (datiStrada && datiStrada.ultimoCasello) {
                             document.getElementById('autostrada').value = datiStrada.autostrada || "";
@@ -537,39 +464,6 @@
                     mostraErrore("Impossibile rilevare la posizione GPS. Assicurati che i permessi di localizzazione siano attivi.");
                     reject(err);
                 }, { timeout: 10000 });
-            });
-        }
-
-        // Collegamento nativo del tasto GPS manuale alla nuova funzione
-        var btnGps = document.getElementById('btn-gps');
-        if (btnGps) {
-            btnGps.addEventListener('click', function() {
-                eseguiGeolocalizzazioneGPS().catch(function(e) { console.log("Localizzazione manuale fallita."); });
-            });
-        }
-
-        // Assistente vocale asincrono con controllo preventivo del GPS
-        var btnVocale = document.getElementById('btn-copilota-vocale');
-        if (btnVocale) {
-            btnVocale.addEventListener('click', async function() {
-                modalitaVocaleAttiva = true;
-
-                var autostradaAttuale = document.getElementById('autostrada').value;
-                var caselloAttuale = document.getElementById('ultimoCasello').value;
-
-                // Se mancano i dati stradali di base, il copilota fa partire prima il GPS in automatico ed aspetta la risposta
-                if (!autostradaAttuale || !caselloAttuale) {
-                    pronunciaVoce("Avvio la localizzazione GPS del veicolo prima di procedere.");
-                    try {
-                        await eseguiGeolocalizzazioneGPS();
-                    } catch (erroreGps) {
-                        pronunciaVoce("Impossibile agganciare il GPS. Inserisci i dati a mano prima di parlare.");
-                        return; 
-                    }
-                }
-
-                pronunciaVoce("Copilota vocale attivato. Qual è la tua meta di viaggio?");
-                setTimeout(avviaRiconoscimentoVocaleMeta, 3000);
             });
         }
 
@@ -592,18 +486,87 @@
             recognition.lang = 'it-IT';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
-
             recognition.start();
 
             recognition.onresult = function(event) {
                 var metaRilevata = event.results[0][0].transcript;
                 document.getElementById('meta').value = metaRilevata;
                 pronunciaVoce("Hai detto " + metaRilevata + ". Calcolo il percorso.");
-                form.dispatchEvent(new Event('submit'));
+                document.getElementById('viaggio-form').dispatchEvent(new Event('submit'));
             };
         }
 
-        // Supporto installazione nativa PWA (Android / Windows)
+        // ==========================================
+        // 3. EVENT LISTENERS E ATTIVAZIONI DOM
+        // ==========================================
+        var form = document.getElementById('viaggio-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (e) e.preventDefault();
+                document.getElementById('app-content').classList.add('hidden');
+                document.getElementById('loading').classList.remove('hidden');
+                scriviLogVisivo("Invio dei dati stradali al server in corso...");
+
+                var datiViaggio = {
+                    autostrada: document.getElementById('autostrada').value,
+                    meta: document.getElementById('meta').value,
+                    ultimoCasello: document.getElementById('ultimoCasello').value,
+                    tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
+                    budget: document.getElementById('budget').value,
+                    distanzaMaxCasello: 15
+                };
+
+                // Ora onSuccess e onFailure sono dichiarate al 100% sopra e non falliranno
+                inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
+            });
+        }
+
+        var sliderTempo = document.getElementById('tempoAllaSosta');
+        var valTempo = document.getElementById('tempo-val');
+        if (sliderTempo && valTempo) {
+            valTempo.textContent = formattaTempo(sliderTempo.value);
+            sliderTempo.addEventListener('input', function() {
+                valTempo.textContent = formattaTempo(sliderTempo.value);
+            });
+        }
+
+        var sliderBudget = document.getElementById('budget');
+        var valBudget = document.getElementById('budget-val');
+        if (sliderBudget && valBudget) {
+            sliderBudget.addEventListener('input', function() {
+                valBudget.textContent = sliderBudget.value + ' €';
+            });
+        }
+
+        var btnGps = document.getElementById('btn-gps');
+        if (btnGps) {
+            btnGps.addEventListener('click', function() {
+                eseguiGeolocalizzazioneGPS().catch(function(e) { console.log("GPS fallito."); });
+            });
+        }
+
+        var btnVocale = document.getElementById('btn-copilota-vocale');
+        if (btnVocale) {
+            btnVocale.addEventListener('click', async function() {
+                modalitaVocaleAttiva = true;
+                var autostradaAttuale = document.getElementById('autostrada').value;
+                var caselloAttuale = document.getElementById('ultimoCasello').value;
+
+                if (!autostradaAttuale || !caselloAttuale) {
+                    pronunciaVoce("Avvio la localizzazione GPS del veicolo prima di procedere.");
+                    try {
+                        await eseguiGeolocalizzazioneGPS();
+                    } catch (erroreGps) {
+                        pronunciaVoce("Impossibile agganciare il GPS. Inserisci i dati a mano prima di parlare.");
+                        return; 
+                    }
+                }
+                pronunciaVoce("Copilota vocale attivato. Qual è la tua meta di viaggio?");
+                setTimeout(avviaRiconoscimentoVocaleMeta, 3000);
+            });
+        }
+
+        // Logiche di contorno PWA
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -614,22 +577,15 @@
                 installBtn.addEventListener('click', () => {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            installBtn.classList.add('hidden');
-                        }
+                        if (choiceResult.outcome === 'accepted') installBtn.classList.add('hidden');
                         deferredPrompt = null;
                     });
                 });
             }
         });
 
-        // Supporto installazione iOS/Safari
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        }
+        const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
         if (isIos() && !isInStandaloneMode()) {
             document.getElementById('ios-install-bubble').classList.remove('hidden');
         }
