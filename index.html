@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SostaGourmet - Copilota Vocale al Casello</title>
     
+    <!-- Icone dell'applicazione per PWA (Android, PC e iOS) -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
     <!-- Tailwind CSS per un design moderno, scuro e reattivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -262,7 +266,7 @@
         function formattaTempo(minuti) {
             minuti = Number(minuti);
             if (minuti < 60) {
-                return minuti + " minuti";
+                return minutes + " minuti";
             } else if (minuti === 60) {
                 return "1 ora";
             } else {
@@ -355,46 +359,6 @@
             }
         }
 
-        function onSuccess(risposta) {
-            if (risposta && risposta.error) {
-                mostraErrore(risposta.error);
-                return;
-            }
-
-            if (!risposta || !risposta.ristoranti || risposta.ristoranti.length === 0) {
-                mostraErrore("Nessun locale Slow Food trovato per questo itinerario. Modifica i parametri di sosta.");
-                return;
-            }
-
-            ristorantiTrovati = risposta.ristoranti;
-            
-            // Aggiorna dinamicamente il testo delle pillole con il nome reale delle osterie
-            for (var i = 0; i < 3; i++) {
-                var pill = document.getElementById('pill-' + i);
-                if (pill) {
-                    if (ristorantiTrovati[i]) {
-                        pill.textContent = pulisciNomePill(ristorantiTrovati[i].nomeRistorante);
-                        pill.classList.remove('hidden');
-                    } else {
-                        pill.classList.add('hidden'); // Nasconde il pulsante se ci sono meno di 3 osterie
-                    }
-                }
-            }
-
-            loading.classList.add('hidden');
-            document.getElementById('hero-banner').classList.add('hidden');
-            risultato.classList.remove('hidden');
-
-            setTimeout(function() {
-                inizializzaMappa();
-                mostraRistorante(0);
-            }, 100);
-        }
-
-        function onFailure(errore) {
-            mostraErrore("Connessione instabile o errore del server. Riprova tra poco.");
-        }
-
         function mostraRistorante(indice) {
             if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
             var r = ristorantiTrovati[indice];
@@ -452,7 +416,7 @@
                 var testoParlato = "Ti consiglio l'opzione " + (indice + 1) + ": " + r.nomeRistorante + 
                     ", situato all'uscita " + (r.caselloUscita || "autostradale") + ". Dista circa " + r.tempoDalCasello + 
                     " minuti dal casello. " + r.percheMerita;
-                pronunciaVoce(testoLanciato);
+                pronunciaVoce(testoParlato); // Corretto il vecchio bug 'testoLanciato' -> 'testoParlato'
             }
         }
 
@@ -467,7 +431,6 @@
 
         /**
          * Invia i dati al server tramite POST bypassando il controllo CORS preventivo (pre-flight OPTIONS).
-         * Imposta l'intestazione su 'text/plain', che viene accettata ed interpretata da Google Apps Script.
          */
         function inviaDatiAlServer(azione, dati, onOk, onKo) {
             var payload = {
@@ -477,7 +440,7 @@
 
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, // Evita pre-flight OPTIONS e aggira il blocco CORS
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
                 body: JSON.stringify(payload)
             })
             .then(function(res) { 
@@ -487,16 +450,21 @@
             .catch(onKo);
         }
 
-        // Integrazione GPS
-        var btnGps = document.getElementById('btn-gps');
-        if (btnGps) {
-            btnGps.addEventListener('click', function() {
+        /**
+         * Funzione Asincrona indipendente per la Geolocalizzazione GPS.
+         * Ritorna una Promise per permettere al Copilota Vocale di attendere il caricamento dei dati stradali.
+         */
+        function eseguiGeolocalizzazioneGPS() {
+            return new Promise(function(resolve, reject) {
                 if (!navigator.geolocation) {
                     mostraErrore("GPS non supportato dal browser corrente.");
+                    reject("GPS non supportato");
                     return;
                 }
-                btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
-                
+
+                var btnGps = document.getElementById('btn-gps');
+                if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
+
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     var payload = {
                         action: "rilevaPosizione",
@@ -517,23 +485,49 @@
                             document.getElementById('autostrada').value = datiStrada.autostrada || "";
                             document.getElementById('ultimoCasello').value = datiStrada.ultimoCasello;
                         }
-                        btnGps.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> AGGANCIATO';
+                        if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> AGGANCIATO';
+                        resolve(datiStrada);
                     })
-                    .catch(function() {
-                        btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                    .catch(function(err) {
+                        if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                        reject(err);
                     });
-                }, function() {
-                    btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                }, function(err) {
+                    if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
                     mostraErrore("Impossibile rilevare la posizione GPS. Assicurati che i permessi di localizzazione siano attivi.");
+                    reject(err);
                 }, { timeout: 10000 });
             });
         }
 
-        // Integrazione sintesi ed assistente vocale
+        // Collegamento nativo del tasto GPS manuale alla nuova funzione
+        var btnGps = document.getElementById('btn-gps');
+        if (btnGps) {
+            btnGps.addEventListener('click', function() {
+                eseguiGeolocalizzazioneGPS().catch(function(e) { console.log("Localizzazione manuale fallita."); });
+            });
+        }
+
+        // Integrazione sintesi ed assistente vocale intelligente (Con controllo preventivo asincrono del GPS)
         var btnVocale = document.getElementById('btn-copilota-vocale');
         if (btnVocale) {
-            btnVocale.addEventListener('click', function() {
+            btnVocale.addEventListener('click', async function() {
                 modalitaVocaleAttiva = true;
+
+                var autostradaAttuale = document.getElementById('autostrada').value;
+                var caselloAttuale = document.getElementById('ultimoCasello').value;
+
+                // BUG RESOLVED: Se mancano i dati stradali di base, il copilota fa partire prima il GPS in automatico ed aspetta la risposta
+                if (!autostradaAttuale || !caselloAttuale) {
+                    pronunciaVoce("Avvio la localizzazione GPS del veicolo prima di procedere.");
+                    try {
+                        await eseguiGeolocalizzazioneGPS();
+                    } catch (erroreGps) {
+                        pronunciaVoce("Impossibile agganciare il GPS. Inserisci i dati a mano prima di parlare.");
+                        return; // Interrompe il flusso vocale se il GPS fallisce e i campi restano vuoti
+                    }
+                }
+
                 pronunciaVoce("Copilota vocale attivato. Qual è la tua meta di viaggio?");
                 setTimeout(avviaRiconoscimentoVocaleMeta, 3000);
             });
