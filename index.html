@@ -3,24 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SostaGourmet - Copilota Vocale al Casello</title>
-	
+    <title>SostaGourmet - Copilota Vocale</title>
+    
     <!-- Google Identity Services (Login Ufficiale Google) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- Icone dell'applicazione per PWA (Android, PC e iOS) -->
+    <!-- Icone PWA -->
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
-    <!-- Tailwind CSS per un design moderno, scuro e reattivo -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Inter per una perfetta leggibilità anche in viaggio -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet.js per la Mappa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Cursore premium per gli slider di controllo */
+        /* Stile slider premium */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -36,27 +43,20 @@
             transform: scale(1.3);
         }
     </style>
-
-    <!-- FontAwesome per le icone di bordo -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Leaflet.js per la navigazione cartografica notturna offline -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
 
-    <!-- Finestra Modale per gli Errori -->
+    <!-- MODALE ERRORI -->
     <div id="error-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-gray-900 border border-red-500/30 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
             <div class="text-red-500 text-4xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <h3 class="text-lg font-bold text-white">Attenzione</h3>
             <p id="error-modal-msg" class="text-gray-400 text-xs leading-relaxed"></p>
-            <button onclick="chiudiErrorModal()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-95">CHIUDI</button>
+            <button onclick="chiudiErrore()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-95">CHIUDI</button>
         </div>
     </div>
 
-    <!-- Barra superiore di navigazione -->
+    <!-- HEADER STRUMENTI -->
     <header class="bg-gray-950 border-b border-gray-900 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2">
             <span class="text-amber-500 text-2xl font-black tracking-tighter flex items-center gap-1.5">
@@ -64,58 +64,43 @@
             </span>
         </div>
         <div class="flex items-center gap-2">
-            <!-- Pulsante PWA -->
-            <button id="pwa-install-btn" class="hidden text-xs bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
-                <i class="fa-solid fa-download"></i> Installa App
-            </button>
-            
-            <!-- Profilo utente ed Esci (Visibile solo a Login effettuato) -->
             <div id="header-user-info" class="hidden flex items-center gap-2">
-                <span id="user-email-display" class="text-[11px] text-gray-400 font-mono max-w-[120px] sm:max-w-[180px] truncate"></span>
-                <button onclick="logout()" title="Scollegati" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1.5 rounded-xl transition active:scale-95 flex items-center gap-1">
+                <span id="user-email-display" class="text-[11px] text-gray-400 font-mono max-w-[120px] truncate"></span>
+                <button onclick="eseguiLogout()" title="Scollegati" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1.5 rounded-xl transition active:scale-95 flex items-center gap-1">
                     <i class="fa-solid fa-right-from-bracket"></i> Esci
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- SCHERMATA DI LOGIN GOOGLE (Inizialmente attiva finché non si verifica l'utente) -->
-    <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-4">
+    <!-- SCHERMATA LOGIN -->
+    <div id="login-screen" class="hidden flex-grow flex flex-col items-center justify-center p-4">
         <div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl max-w-sm w-full text-center space-y-6 shadow-2xl">
             <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-2xl flex items-center justify-center mx-auto text-3xl">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div class="space-y-2">
                 <h2 class="text-2xl font-black text-white tracking-tight">Area Riservata</h2>
-                <p class="text-gray-400 text-xs leading-relaxed">
-                    Accedi con il tuo account Google per utilizzare il copilota e consultare le osterie.
-                </p>
+                <p class="text-gray-400 text-xs leading-relaxed">Accedi con Google per autorizzare il copilota.</p>
             </div>
-            
-            <!-- Contenitore del Pulsante Ufficiale Google -->
             <div class="flex justify-center pt-2">
                 <div id="buttonDiv"></div>
             </div>
-
             <div id="login-error" class="text-red-400 text-xs font-semibold empty:hidden leading-relaxed"></div>
         </div>
     </div>
 
-    <!-- CONTENITORE PRINCIPALE DELL'APPLICAZIONE (Nascosto fino all'autenticazione) -->
+    <!-- MAIN APP -->
     <main id="app-main-wrapper" class="hidden flex-grow flex flex-col justify-center max-w-lg w-full mx-auto p-4 md:p-6 space-y-6">
-
-        <!-- Hero di benvenuto e descrizione funzionale -->
+        
+        <!-- HERO -->
         <div id="hero-banner" class="text-center space-y-2 mt-2">
             <h1 class="text-3xl font-black tracking-tight leading-tight">Il tuo Copilota <span class="text-amber-500">Slow Food</span></h1>
-            <p class="text-gray-400 text-xs max-w-sm mx-auto">
-                Inserisci la tua meta: troveremo le osterie reali certificate più comode vicino ai caselli stradali della tua tratta.
-            </p>
+            <p class="text-gray-400 text-xs max-w-sm mx-auto">Inserisci la tua meta: troveremo le osterie certificate vicino ai caselli stradali della tua tratta.</p>
         </div>
 
-        <!-- Area di controllo e di input stradale -->
+        <!-- FORM RICERCA -->
         <div id="app-content" class="space-y-4">
-            
-            <!-- Inserimento dati stradali o attivazione GPS -->
             <form id="viaggio-form" class="space-y-4">
                 <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-3">
                     <div class="flex justify-between items-center mb-1">
@@ -125,13 +110,12 @@
                         </button>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="autostrada" required placeholder="Es. A1" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center font-bold transition-all duration-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm">
-                        <input type="text" id="meta" required placeholder="La tua meta (es. Milano)" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm">
+                        <input type="text" id="autostrada" required placeholder="Es. A1" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center font-bold outline-none text-sm focus:ring-1 focus:ring-amber-500">
+                        <input type="text" id="meta" required placeholder="Meta (es. Milano)" class="bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center outline-none text-sm focus:ring-1 focus:ring-amber-500">
                     </div>
-                    <input type="text" id="ultimoCasello" required placeholder="Ultimo casello superato (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm">
+                    <input type="text" id="ultimoCasello" required placeholder="Ultimo casello (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center outline-none text-sm focus:ring-1 focus:ring-amber-500">
                 </div>
 
-                <!-- Parametri di sosta ed economici -->
                 <div class="space-y-4 bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl text-sm">
                     <div>
                         <div class="flex justify-between font-bold">
@@ -140,7 +124,6 @@
                         </div>
                         <input type="range" id="tempoAllaSosta" min="15" max="180" step="15" value="60" class="w-full accent-amber-500 mt-1">
                     </div>
-
                     <div>
                         <div class="flex justify-between font-bold">
                             <span>💰 Budget indicativo a testa:</span>
@@ -151,7 +134,7 @@
                 </div>
 
                 <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-black text-lg py-4 rounded-2xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass-chart text-xl"></i> CALCOLA SOSTE GOURMET
+                    <i class="fa-solid fa-magnifying-glass-chart"></i> CALCOLA SOSTE
                 </button>
             </form>
 
@@ -160,38 +143,22 @@
             </button>
         </div>
 
-        <!-- Schermata di attesa -->
+        <!-- SCHERMATA CARICAMENTO -->
         <div id="loading" class="hidden bg-gray-900 p-8 rounded-3xl border border-gray-800 text-center space-y-6 shadow-2xl py-12 max-w-sm mx-auto">
             <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
-                <div class="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
                 <div class="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                 <i class="fa-solid fa-utensils text-amber-500 text-3xl"></i>
             </div>
-            <div class="space-y-2">
-                <h3 class="text-xl font-bold text-amber-500">Sto parlando con Gemini...</h3>
-                <p class="text-gray-400 text-xs leading-relaxed">
-                    Stiamo filtrando il database delle trattorie Slow Food lungo il tuo percorso reale.
-                </p>
-            </div>
-            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 text-left">
-                <div class="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
-                    <i class="fa-solid fa-terminal text-amber-500"></i>
-                    <span>LOG DI BORDO:</span>
-                </div>
-                <div id="loading-logs" class="text-[10px] text-amber-500/70 font-mono mt-1 h-14 overflow-y-auto space-y-1">
-                    [INFO] In attesa di avvio...
-                </div>
-            </div>
+            <h3 class="text-xl font-bold text-amber-500">Sto parlando con Gemini...</h3>
+            <p class="text-gray-400 text-xs">Ricerca e filtraggio osterie in corso...</p>
         </div>
 
-        <!-- Schermata dei risultati gastronomici e cartografici -->
+        <!-- SCHERMATA RISULTATI -->
         <div id="risultato" class="hidden space-y-4">
-            
-            <!-- Badge casello -->
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-2xl shadow-lg text-gray-950 flex justify-between items-center">
-                <div class="space-y-0.5">
-                    <span class="text-[10px] font-bold uppercase tracking-wider opacity-75">Uscita Consigliata</span>
-                    <h2 id="res-casello" class="text-xl font-black tracking-tight leading-none">-</h2>
+                <div>
+                    <span class="text-[10px] font-bold uppercase opacity-75">Uscita Consigliata</span>
+                    <h2 id="res-casello" class="text-xl font-black leading-none">-</h2>
                 </div>
                 <div class="text-3xl opacity-20"><i class="fa-solid fa-road-barrier"></i></div>
             </div>
@@ -201,589 +168,428 @@
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <!-- Pulsanti selezione osterie -->
+            <!-- Pulsanti Osterie -->
             <div class="grid grid-cols-3 gap-2" id="scelta-osterie-pills">
-                <button onclick="mostraRistorante(0)" id="pill-0" class="bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow truncate px-1">OPZIONE 1</button>
-                <button onclick="mostraRistorante(1)" id="pill-1" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 2</button>
-                <button onclick="mostraRistorante(2)" id="pill-2" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 3</button>
+                <button onclick="mostraRistorante(0)" id="pill-0" class="hidden bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 truncate px-1">OPZIONE 1</button>
+                <button onclick="mostraRistorante(1)" id="pill-1" class="hidden bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 2</button>
+                <button onclick="mostraRistorante(2)" id="pill-2" class="hidden bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 3</button>
             </div>
 
-            <!-- Scheda dettagliata locale -->
-            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4 relative">
+            <!-- Dettaglio Osteria -->
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4">
                 <div>
-                    <h3 id="res-nome" class="text-xl font-black text-white leading-tight">-</h3>
-                    <p id="res-indirizzo" class="text-gray-400 text-xs flex items-center gap-1 mt-1">
-                        <i class="fa-solid fa-map-location-dot text-amber-500"></i> -
-                    </p>
+                    <h3 id="res-nome" class="text-xl font-black text-white">-</h3>
+                    <p id="res-indirizzo" class="text-gray-400 text-xs mt-1">-</p>
                 </div>
-
                 <div class="grid grid-cols-2 gap-2 text-xs border-y border-gray-800 py-3">
-                    <div class="space-y-1">
-                        <span class="text-gray-500 block">🚗 Tempo dal Casello:</span>
+                    <div>
+                        <span class="text-gray-500 block">🚗 Tempo d'auto:</span>
                         <span id="res-tempo-strada" class="font-bold text-white text-sm">-</span>
                     </div>
-                    <div class="space-y-1 text-right">
-                        <span class="text-gray-500 block">💰 Spesa indicativa:</span>
+                    <div class="text-right">
+                        <span class="text-gray-500 block">💰 Spesa:</span>
                         <span id="res-prezzo" class="font-bold text-amber-500 text-sm">-</span>
                     </div>
                 </div>
-
                 <div class="space-y-2">
-                    <span class="text-amber-500 font-bold text-xs uppercase tracking-wider block">⭐ Perché Merita:</span>
-                    <p id="res-motivo" class="text-gray-300 text-xs leading-relaxed italic"></p>
+                    <span class="text-amber-500 font-bold text-xs uppercase block">⭐ Perché Merita:</span>
+                    <p id="res-motivo" class="text-gray-300 text-xs italic">-</p>
                 </div>
-
                 <div class="space-y-2">
-                    <span class="text-amber-500 font-bold text-xs uppercase tracking-wider block">🍝 Piatti Consigliati Slow Food:</span>
+                    <span class="text-amber-500 font-bold text-xs uppercase block">🍝 Piatti Consigliati:</span>
                     <div id="res-piatti" class="flex flex-wrap gap-1.5"></div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-2 pt-2">
-                    <a id="btn-chiama" href="#" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl text-xs text-center transition active:scale-95 flex justify-center items-center gap-1.5 border border-gray-700">
-                        <i class="fa-solid fa-phone"></i> CHIAMA LOCALE
-                    </a>
-                    <a id="btn-naviga" target="_blank" href="#" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl text-xs text-center transition active:scale-95 flex justify-center items-center gap-1.5 shadow-lg">
-                        <i class="fa-solid fa-location-arrow"></i> NAVIGA ORA
-                    </a>
+                    <a id="btn-chiama" href="#" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl text-xs text-center border border-gray-700 transition active:scale-95"><i class="fa-solid fa-phone"></i> CHIAMA</a>
+                    <a id="btn-naviga" target="_blank" href="#" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl text-xs text-center shadow-lg transition active:scale-95"><i class="fa-solid fa-location-arrow"></i> NAVIGA</a>
                 </div>
             </div>
 
-            <button onclick="tornaAlFormulario()" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-xl border border-gray-800 text-xs transition active:scale-95 flex justify-center items-center gap-1.5">
-                <i class="fa-solid fa-chevron-left"></i> NUOVA RICERCA COPILOTA
+            <button onclick="resetApp()" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-xl border border-gray-800 text-xs transition active:scale-95">
+                <i class="fa-solid fa-chevron-left"></i> NUOVA RICERCA
             </button>
         </div>
-
     </main>
 
-    <!-- Fumetto d'aiuto installazione per iOS/Safari -->
-    <div id="ios-install-bubble" class="hidden fixed bottom-6 left-4 right-4 bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-2xl z-50 text-xs space-y-3 animate-bounce">
-        <div class="flex justify-between items-start">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-info text-amber-500 text-lg"></i>
-                <span class="font-bold text-white text-sm">Installa SostaGourmet su iPhone</span>
-            </div>
-            <button onclick="document.getElementById('ios-install-bubble').classList.add('hidden')" class="text-gray-500 hover:text-white">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-        </div>
-        <p class="text-gray-400 leading-relaxed">
-            Premi il pulsante **Condividi** <i class="fa-solid fa-arrow-up-from-bracket text-blue-400 mx-0.5"></i> in fondo a Safari e seleziona **Aggiungi alla schermata Home** per utilizzarla come un'app reale.
-        </p>
-    </div>
-
-    <!-- Piè di pagina -->
-    <footer class="bg-gray-950 border-t border-gray-900 py-4 text-center text-[10px] text-gray-600 mt-6 space-y-2.5">
-        <div>SostaGourmet © 2026 • Realizzato da mdpt</div>
-        <div class="flex justify-center items-center gap-4 text-xs text-gray-500 font-medium">
-            <a href="mailto:mttdptrz@gmail.com" class="hover:text-amber-500 transition-colors duration-200 flex items-center gap-1">
-                <i class="fa-solid fa-envelope"></i> Email
-            </a>
-            <span class="text-gray-800">•</span>
-        </div>
+    <!-- FOOTER -->
+    <footer class="bg-gray-950 border-t border-gray-900 py-4 text-center text-[10px] text-gray-600 mt-6">
+        SostaGourmet © 2026 • Realizzato da mdpt
     </footer>
 
+    <!-- SCRIPT PRINCIPALE -->
     <script>
- // ==========================================
-// 1. CONFIGURAZIONI E STATO GLOBALE
-// ==========================================
-const GOOGLE_CLIENT_ID = "975846730385-oqqmrm4log2k0k1bpbd5nu884699tkm0.apps.googleusercontent.com";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
+        // === VARIABILI GLOBALI E CONFIGURAZIONE ===
+        const GOOGLE_CLIENT_ID = "975846730385-oqqmrm4log2k0k1bpbd5nu884699tkm0.apps.googleusercontent.com";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
+        const STORAGE_KEY = "sostagourmet_user_email";
+        
+        let gsiInitialized = false;
+        let mappaApp = null;
+        let markerLayers = [];
+        let ristorantiCorrenti = [];
+        let voiceCopilotActive = false;
 
-var ristorantiTrovati = [];
-var mappaApp = null;
-var markerLayers = [];
-var modalitaVocaleAttiva = false;
-var isUnloading = false;
-
-// Funzione per decodificare il Token Google in locale ed estrarre la mail con certezza
-function parseJwt(token) {
-    try {
-        var base64Url = token.split('.')[1];
-        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
-}
-
-function getUserEmail() {
-    var email = localStorage.getItem("user_email");
-    if (!email || email === "undefined" || email === "null") return "";
-    return email.trim().toLowerCase();
-}
-
-// ==========================================
-// 2. GESTIONE AUTENTICAZIONE GOOGLE
-// ==========================================
-var isGoogleGsiInitialized = false;
-
-window.addEventListener('DOMContentLoaded', function () {
-    const savedEmail = getUserEmail();
-    if (savedEmail) {
-        sbloccaApplicazione(savedEmail);
-    } else {
-        mostraSchermataLogin();
-    }
-});
-
-function mostraSchermataLogin() {
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('app-main-wrapper').classList.add('hidden');
-    document.getElementById('header-user-info').classList.add('hidden');
-
-    if (window.google && google.accounts && google.accounts.id) {
-        inizializzaPulsanteGoogle();
-    } else {
-        window.onload = inizializzaPulsanteGoogle;
-    }
-}
-
-function inizializzaPulsanteGoogle() {
-    if (!isGoogleGsiInitialized) {
-        google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleCredentialResponse
-        });
-        isGoogleGsiInitialized = true;
-    }
-
-    google.accounts.id.renderButton(
-        document.getElementById("buttonDiv"),
-        { theme: "outline", size: "large", type: "standard", shape: "pill" }
-    );
-}
-
-function handleCredentialResponse(response) {
-    if (response && response.credential) {
-        // 🔑 Decodifichiamo l'email direttamente dal Token Google certificato
-        var googleData = parseJwt(response.credential);
-        if (googleData && googleData.email) {
-            var emailVerificata = googleData.email.trim().toLowerCase();
-            
-            // Salviamo la mail certificata in memoria
-            localStorage.setItem("user_email", emailVerificata);
-            
-            // Verifichiamo l'accesso con il backend
-            verificaAccessoServer(emailVerificata);
-        } else {
-            document.getElementById('login-error').textContent = "Impossibile leggere il profilo Google.";
+        // === GESTIONE MEMORIA SICURA ===
+        function getSafeEmail() {
+            let email = localStorage.getItem(STORAGE_KEY);
+            // Pulizia aggressiva della memoria se trova valori corrotti come "undefined"
+            if (!email || email === "undefined" || email === "null" || email.trim() === "") {
+                localStorage.removeItem(STORAGE_KEY);
+                return null;
+            }
+            return email.trim().toLowerCase();
         }
-    }
-}
 
-function verificaAccessoServer(email) {
-    document.getElementById('login-error').textContent = "";
-    
-    fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-            action: "verificaAccesso",
-            userEmail: email
-        })
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-        if (data && data.authorized) {
-            sbloccaApplicazione(email);
-        } else {
-            logout();
-            document.getElementById('login-error').textContent = (data && data.error) ? data.error : "Accesso non autorizzato.";
-        }
-    })
-    .catch(function(err) {
-        document.getElementById('login-error').textContent = "Errore di connessione con il server.";
-    });
-}
-
-function sbloccaApplicazione(email) {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-main-wrapper').classList.remove('hidden');
-    document.getElementById('header-user-info').classList.remove('hidden');
-    document.getElementById('user-email-display').textContent = email;
-}
-
-function logout() {
-    localStorage.removeItem("user_email");
-    localStorage.clear();
-    location.reload();
-}
-
-// ==========================================
-// 3. FUNZIONI CORE E RISPOSTE SERVER
-// ==========================================
-function mostraErrore(messaggio) {
-    document.getElementById('error-modal-msg').textContent = messaggio;
-    document.getElementById('error-modal').classList.remove('hidden');
-    tornaAlFormulario();
-}
-
-function chiudiErrorModal() {
-    document.getElementById('error-modal').classList.add('hidden');
-}
-
-function tornaAlFormulario() {
-    document.getElementById('risultato').classList.add('hidden');
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('app-content').classList.remove('hidden');
-    document.getElementById('hero-banner').classList.remove('hidden');
-}
-
-function scriviLogVisivo(messaggio) {
-    var box = document.getElementById('loading-logs');
-    if (box) {
-        var riga = document.createElement('div');
-        riga.textContent = "[LOG] " + messaggio;
-        box.appendChild(riga);
-        box.scrollTop = box.scrollHeight;
-    }
-}
-
-function formattaTempo(minuti) {
-    minuti = Number(minuti);
-    if (minuti < 60) {
-        return minuti + " minuti";
-    } else if (minuti === 60) {
-        return "1 ora";
-    } else {
-        var ore = Math.floor(minuti / 60);
-        var restanti = minuti % 60;
-        if (restanti === 0) {
-            return ore + (ore === 1 ? " ora" : " ore");
-        }
-        return ore + (ore === 1 ? " ora" : " ore") + " e " + restanti + " min";
-    }
-}
-
-function pulisciNomePill(nome) {
-    if (!nome) return "SOSTA";
-    var n = nome.trim();
-    n = n.replace(/^(Trattoria|Osteria|Ristorante|Antica Trattoria|Antica Osteria|Antico Ristorante|Albergo|Da|Al|All'|La|Il)\s+/i, "");
-    if (n.length > 11) {
-        return n.substring(0, 10).trim() + "..";
-    }
-    return n.toUpperCase();
-}
-
-function inviaDatiAlServer(azione, dati, onOk, onKo) {
-    var email = getUserEmail();
-    if (!email) {
-        mostraErrore("Sessione non valida. Effettua nuovamente il login.");
-        logout();
-        return;
-    }
-
-    var payload = { 
-        action: azione, 
-        userEmail: email, 
-        datiViaggio: dati 
-    };
-    fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-        body: JSON.stringify(payload)
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(res) {
-        if (res && res.authorized === false) {
-            mostraErrore(res.error || "Accesso non autorizzato.");
-            logout();
-            return;
-        }
-        onOk(res);
-    })
-    .catch(onKo);
-}
-
-function onSuccess(risposta) {
-    if (risposta && risposta.error) {
-        mostraErrore(risposta.error);
-        return;
-    }
-    if (!risposta || !risposta.ristoranti || risposta.ristoranti.length === 0) {
-        mostraErrore("Nessun locale Slow Food trovato per questo tentativo. Modifica i parametri di sosta.");
-        return;
-    }
-
-    ristorantiTrovati = risposta.ristoranti;
-    
-    for (var i = 0; i < 3; i++) {
-        var pill = document.getElementById('pill-' + i);
-        if (pill) {
-            if (ristorantiTrovati[i]) {
-                pill.textContent = pulisciNomePill(ristorantiTrovati[i].nomeRistorante);
-                pill.classList.remove('hidden');
-            } else {
-                pill.classList.add('hidden'); 
+        function setSafeEmail(email) {
+            if (email && typeof email === 'string') {
+                localStorage.setItem(STORAGE_KEY, email.trim().toLowerCase());
             }
         }
-    }
 
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('hero-banner').classList.add('hidden');
-    document.getElementById('risultato').classList.remove('hidden');
-
-    setTimeout(function() {
-        inizializzaMappa();
-        mostraRistorante(0);
-    }, 100);
-}
-
-function onFailure(errore) {
-    mostraErrore("Connessione instabile o errore del server. Riprova tra poco.");
-}
-
-function mostraRistorante(indice) {
-    if (!ristorantiTrovati || !ristorantiTrovati[indice]) return;
-    var r = ristorantiTrovati[indice];
-
-    document.getElementById('res-casello').textContent = r.caselloUscita || "USCITA VICINA";
-    document.getElementById('res-nome').textContent = r.nomeRistorante;
-    document.getElementById('res-indirizzo').innerHTML = '<i class="fa-solid fa-map-location-dot text-amber-500"></i> ' + r.indirizzo;
-    document.getElementById('res-tempo-strada').textContent = r.tempoDalCasello + " min d'auto";
-    document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato;
-    document.getElementById('res-motivo').textContent = r.percheMerita;
-
-    var pBox = document.getElementById('res-piatti');
-    pBox.innerHTML = '';
-    if (r.piattiConsigliati && r.piattiConsigliati.length > 0) {
-        r.piattiConsigliati.forEach(function(p) {
-            var b = document.createElement('span');
-            b.className = "bg-gray-800 text-gray-300 px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-gray-700 uppercase tracking-wide";
-            b.textContent = p;
-            pBox.appendChild(b);
-        });
-    } else {
-        pBox.innerHTML = '<span class="text-gray-500 italic text-[10px]">Nessuna specialità indicata</span>';
-    }
-
-    document.getElementById('btn-chiama').href = r.telefono ? "tel:" + r.telefono : "#";
-    document.getElementById('btn-naviga').href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(r.nomeRistorante + ", " + r.indirizzo);
-
-    for (var i = 0; i < 3; i++) {
-        var pill = document.getElementById('pill-' + i);
-        if (pill) {
-            if (i === indice) {
-                pill.className = "bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow truncate px-1";
-            } else {
-                pill.className = "bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1";
+        // === DECODER JWT GOOGLE IN LOCALE ===
+        // Questo impedisce per sempre che la mail si perda o arrivi undefined
+        function decodeGoogleJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error("Errore fatale decodifica Google Token", e);
+                return null;
             }
         }
-    }
 
-    if (mappaApp && r.lat && r.lng) {
-        markerLayers.forEach(function(m) { mappaApp.removeLayer(m); });
-        markerLayers = [];
-        var marker = L.marker([r.lat, r.lng]).addTo(mappaApp);
-        marker.bindPopup("<b class='text-gray-950'>" + r.nomeRistorante + "</b>").openPopup();
-        markerLayers.push(marker);
-        mappaApp.setView([r.lat, r.lng], 13);
-    }
+        // === INIZIALIZZAZIONE AL CARICAMENTO ===
+        window.addEventListener('DOMContentLoaded', () => {
+            const emailInMemoria = getSafeEmail();
+            if (emailInMemoria) {
+                attivaInterfacciaApp(emailInMemoria);
+            } else {
+                mostraInterfacciaLogin();
+            }
+        });
 
-    if (modalitaVocaleAttiva && !isUnloading) {
-        var testoParlato = "Ti consiglio l'opzione " + (indice + 1) + ": " + r.nomeRistorante + 
-            ", situato all'uscita " + (r.caselloUscita || "autostradale") + ". Dista circa " + r.tempoDalCasello + 
-            " minuti dal casello. " + r.percheMerita;
-        pronunciaVoce(testoParlato); 
-    }
-}
-
-function inizializzaMappa() {
-    if (mappaApp !== null) return;
-    mappaApp = L.map('map', { zoomControl: false }).setView([41.902783, 12.496366], 6);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(mappaApp);
-}
-
-function eseguiGeolocalizzazioneGPS() {
-    return new Promise(function(resolve, reject) {
-        var email = getUserEmail();
-        if (!email) {
-            mostraErrore("Sessione non valida. Effettua il login.");
-            logout();
-            reject("No email");
-            return;
+        // === FUNZIONI INTERFACCIA LOGIN ===
+        function mostraInterfacciaLogin() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-main-wrapper').classList.add('hidden');
+            document.getElementById('header-user-info').classList.add('hidden');
+            
+            // Attende che lo script di Google sia caricato, poi disegna il pulsante
+            const checkGoogleInterval = setInterval(() => {
+                if (window.google && window.google.accounts) {
+                    clearInterval(checkGoogleInterval);
+                    disegnaPulsanteGoogle();
+                }
+            }, 100);
         }
 
-        if (!navigator.geolocation) {
-            mostraErrore("GPS non supportato dal browser corrente.");
-            reject("GPS non supportato");
-            return;
+        function disegnaPulsanteGoogle() {
+            if (gsiInitialized) return; // Evita errori in console
+            
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: gestisciRispostaGoogle
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"),
+                { theme: "outline", size: "large", type: "standard", shape: "pill" }
+            );
+            gsiInitialized = true;
         }
-        var btnGps = document.getElementById('btn-gps');
-        if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
 
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            var payload = { 
-                action: "rilevaPosizione", 
-                userEmail: email,
-                lat: pos.coords.latitude, 
-                lon: pos.coords.longitude 
+        function gestisciRispostaGoogle(response) {
+            if (response && response.credential) {
+                const userData = decodeGoogleJWT(response.credential);
+                if (userData && userData.email) {
+                    const extractedEmail = userData.email;
+                    document.getElementById('login-error').textContent = "Verifica autorizzazione in corso...";
+                    
+                    // Controlla nel Foglio Google se l'email è autorizzata
+                    chiamaServer("verificaAccesso", { userEmail: extractedEmail }, 
+                        function(successData) {
+                            setSafeEmail(extractedEmail);
+                            attivaInterfacciaApp(extractedEmail);
+                        },
+                        function(errorMsg) {
+                            eseguiLogout();
+                            document.getElementById('login-error').textContent = errorMsg || "Accesso non autorizzato.";
+                        }
+                    );
+                } else {
+                    document.getElementById('login-error').textContent = "Impossibile leggere l'email da Google.";
+                }
+            }
+        }
+
+        function attivaInterfacciaApp(email) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-main-wrapper').classList.remove('hidden');
+            document.getElementById('header-user-info').classList.remove('hidden');
+            document.getElementById('user-email-display').textContent = email;
+        }
+
+        function eseguiLogout() {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+
+        // === MOTORE DI COMUNICAZIONE CON APPS SCRIPT (Nessun undefined amato qui) ===
+        function chiamaServer(azione, datiAggiuntivi, onSuccess, onFail) {
+            // Se l'azione non è il primo login, usiamo l'email della memoria
+            let emailDaInviare = datiAggiuntivi.userEmail || getSafeEmail();
+            
+            if (!emailDaInviare) {
+                onFail("Sessione scaduta o email mancante.");
+                return;
+            }
+
+            const payload = { 
+                action: azione, 
+                userEmail: emailDaInviare, 
+                ...datiAggiuntivi 
             };
+
+            console.log(`[API] Invio richiesta: ${azione}`, payload); // Log per F12
+
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
             })
-            .then(function(res) { return res.json(); })
-            .then(function(datiStrada) {
-                if (datiStrada && datiStrada.authorized === false) {
-                    mostraErrore(datiStrada.error || "Accesso negato.");
-                    logout();
-                    reject("Non autorizzato");
-                    return;
-                }
-                var caselloTrovato = datiStrada ? (datiStrada.ultimoCasello || datiStrada.casello || datiStrada.nomeCasello) : null;
-                var autostradaTrovata = datiStrada ? (datiStrada.autostrada || datiStrada.nomeAutostrada) : null;
-
-                if (caselloTrovato) {
-                    document.getElementById('autostrada').value = autostradaTrovata || "";
-                    document.getElementById('ultimoCasello').value = caselloTrovato;
-                    if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> AGGANCIATO';
-                    resolve(datiStrada);
+            .then(res => res.json())
+            .then(data => {
+                console.log(`[API] Risposta da ${azione}:`, data); // Log per F12
+                if (data.authorized === false) {
+                    onFail(data.error || "Non sei autorizzato all'uso dell'app.");
                 } else {
-                    if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                    mostraErrore("Posizione rilevata, ma nessun casello autostradale riconosciuto nelle vicinanze.");
-                    reject("Nessun casello");
+                    onSuccess(data);
                 }
             })
-            .catch(function(err) {
-                if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                reject(err);
+            .catch(err => {
+                console.error("[API] Errore critico di rete:", err);
+                onFail("Errore di connessione al server.");
             });
-        }, function(err) {
-            if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-            mostraErrore("Impossibile rilevare la posizione GPS. Assicurati che i permessi siano attivi.");
-            reject(err);
-        }, { timeout: 10000 });
-    });
-}
+        }
 
-function pronunciaVoce(testo) {
-    if ('speechSynthesis' in window) {
-        var speech = new SpeechSynthesisUtterance(testo);
-        speech.lang = 'it-IT';
-        speech.rate = 1.0;
-        window.speechSynthesis.speak(speech);
-    }
-}
+        // === UI & UTILITA' ===
+        function mostraErrore(msg) {
+            document.getElementById('error-modal-msg').textContent = msg;
+            document.getElementById('error-modal').classList.remove('hidden');
+            resetApp();
+        }
 
-function avviaRiconoscimentoVocaleMeta() {
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        mostraErrore("Riconoscimento vocale non supportato da questo browser.");
-        return;
-    }
-    var recognition = new SpeechRecognition();
-    recognition.lang = 'it-IT';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.start();
+        function chiudiErrore() {
+            document.getElementById('error-modal').classList.add('hidden');
+        }
 
-    recognition.onresult = function(event) {
-        var metaRilevata = event.results[0][0].transcript;
-        document.getElementById('meta').value = metaRilevata;
-        pronunciaVoce("Hai detto " + metaRilevata + ". Calcolo il percorso.");
-        document.getElementById('viaggio-form').dispatchEvent(new Event('submit'));
-    };
-}
+        function resetApp() {
+            document.getElementById('risultato').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            document.getElementById('hero-banner').classList.remove('hidden');
+        }
 
-// ==========================================
-// 4. EVENT LISTENERS E ATTIVAZIONI DOM
-// ==========================================
-var form = document.getElementById('viaggio-form');
-if (form) {
-    form.addEventListener('submit', function(e) {
-        if (e) e.preventDefault();
-        document.getElementById('app-content').classList.add('hidden');
-        document.getElementById('loading').classList.remove('hidden');
-        scriviLogVisivo("Invio dei dati stradali al server in corso...");
+        function formattaNomePillola(nome) {
+            let pulito = nome.replace(/^(Trattoria|Osteria|Ristorante|Antica|Albergo|Da|Al|All'|La|Il)\s+/i, "");
+            return pulito.length > 10 ? pulito.substring(0, 9) + ".." : pulito;
+        }
 
-        var datiViaggio = {
-            autostrada: document.getElementById('autostrada').value,
-            meta: document.getElementById('meta').value,
-            ultimoCasello: document.getElementById('ultimoCasello').value,
-            tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
-            budget: document.getElementById('budget').value,
-            distanzaMaxCasello: 15
-        };
+        // === LOGICA GPS ===
+        document.getElementById('btn-gps').addEventListener('click', function() {
+            const btn = this;
+            if (!navigator.geolocation) {
+                mostraErrore("GPS non supportato dal tuo browser.");
+                return;
+            }
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> RICERCA...';
+            
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const datiGps = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    
+                    chiamaServer("rilevaPosizione", datiGps, 
+                        function(risposta) {
+                            // Supporta le varie nomenclature di Apps Script
+                            const casello = risposta.ultimoCasello || risposta.casello || risposta.nomeCasello;
+                            const autostrada = risposta.autostrada || risposta.nomeAutostrada;
+                            
+                            if (casello) {
+                                document.getElementById('ultimoCasello').value = casello;
+                                document.getElementById('autostrada').value = autostrada || "A1";
+                                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> TROVATO';
+                            } else {
+                                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                                mostraErrore("Coordinate rilevate, ma non sei vicino ad alcun casello autostradale.");
+                            }
+                        },
+                        function(err) {
+                            btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                            mostraErrore(err);
+                        }
+                    );
+                }, 
+                function(err) {
+                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                    mostraErrore("Impossibile accedere al GPS del telefono. Controlla i permessi.");
+                }, 
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        });
 
-        inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
-    });
-}
+        // === LOGICA GEMINI & RICERCA ===
+        document.getElementById('viaggio-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('hero-banner').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
 
-var sliderTempo = document.getElementById('tempoAllaSosta');
-var valTempo = document.getElementById('tempo-val');
-if (sliderTempo && valTempo) {
-    valTempo.textContent = formattaTempo(sliderTempo.value);
-    sliderTempo.addEventListener('input', function() {
-        valTempo.textContent = formattaTempo(sliderTempo.value);
-    });
-}
+            const payloadViaggio = {
+                datiViaggio: {
+                    autostrada: document.getElementById('autostrada').value,
+                    meta: document.getElementById('meta').value,
+                    ultimoCasello: document.getElementById('ultimoCasello').value,
+                    tempoAllaSosta: document.getElementById('tempoAllaSosta').value,
+                    budget: document.getElementById('budget').value,
+                    distanzaMaxCasello: 15
+                }
+            };
 
-var sliderBudget = document.getElementById('budget');
-var valBudget = document.getElementById('budget-val');
-if (sliderBudget && valBudget) {
-    sliderBudget.addEventListener('input', function() {
-        valBudget.textContent = sliderBudget.value + ' €';
-    });
-}
+            chiamaServer("chiamaGemini", payloadViaggio, 
+                function(risposta) {
+                    if (!risposta.ristoranti || risposta.ristoranti.length === 0) {
+                        mostraErrore("Gemini non ha trovato Osterie Slow Food per questa tratta.");
+                        return;
+                    }
+                    
+                    ristorantiCorrenti = risposta.ristoranti;
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('risultato').classList.remove('hidden');
+                    
+                    // Costruisce i bottoni in alto
+                    for (let i=0; i<3; i++) {
+                        let pill = document.getElementById(`pill-${i}`);
+                        if (ristorantiCorrenti[i]) {
+                            pill.textContent = formattaNomePillola(ristorantiCorrenti[i].nomeRistorante).toUpperCase();
+                            pill.classList.remove('hidden');
+                        } else {
+                            pill.classList.add('hidden');
+                        }
+                    }
+                    
+                    setTimeout(() => { inizializzaMappa(); mostraRistorante(0); }, 200);
+                },
+                function(err) {
+                    mostraErrore(err);
+                }
+            );
+        });
 
-var btnGps = document.getElementById('btn-gps');
-if (btnGps) {
-    btnGps.addEventListener('click', function() {
-        eseguiGeolocalizzazioneGPS().catch(function(e) { console.log("GPS fallito."); });
-    });
-}
+        // === MAPPA & VISUALIZZAZIONE DATI ===
+        function inizializzaMappa() {
+            if (mappaApp !== null) return;
+            mappaApp = L.map('map', { zoomControl: false }).setView([41.9, 12.5], 6);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mappaApp);
+        }
 
-var btnVocale = document.getElementById('btn-copilota-vocale');
-if (btnVocale) {
-    btnVocale.addEventListener('click', async function() {
-        modalitaVocaleAttiva = true;
-        var autostradaAttuale = document.getElementById('autostrada').value;
-        var caselloAttuale = document.getElementById('ultimoCasello').value;
+        function mostraRistorante(index) {
+            const r = ristorantiCorrenti[index];
+            if (!r) return;
 
-        if (!autostradaAttuale || !caselloAttuale) {
-            pronunciaVoce("Avvio la localizzazione GPS del veicolo prima di procedere.");
-            try {
-                await eseguiGeolocalizzazioneGPS();
-            } catch (erroreGps) {
-                pronunciaVoce("Impossibile agganciare il GPS. Inserisci i dati a mano prima di parlare.");
-                return; 
+            // Aggiorna UI
+            document.getElementById('res-casello').textContent = r.caselloUscita || "USCITA";
+            document.getElementById('res-nome').textContent = r.nomeRistorante;
+            document.getElementById('res-indirizzo').innerHTML = `<i class="fa-solid fa-map-location-dot text-amber-500"></i> ${r.indirizzo}`;
+            document.getElementById('res-tempo-strada').textContent = `${r.tempoDalCasello} min d'auto`;
+            document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato;
+            document.getElementById('res-motivo').textContent = r.percheMerita;
+            
+            // Piatti
+            const pBox = document.getElementById('res-piatti');
+            pBox.innerHTML = '';
+            if (r.piattiConsigliati && r.piattiConsigliati.length > 0) {
+                r.piattiConsigliati.forEach(p => {
+                    pBox.innerHTML += `<span class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-[10px] uppercase border border-gray-700">${p}</span>`;
+                });
+            } else {
+                pBox.innerHTML = '<span class="text-gray-600 italic text-[10px]">Nessuna informazione sui piatti</span>';
+            }
+
+            // Pulsanti Azione
+            document.getElementById('btn-chiama').href = r.telefono ? `tel:${r.telefono}` : "#";
+            document.getElementById('btn-naviga').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.nomeRistorante + ", " + r.indirizzo)}`;
+
+            // Colora i bottoni in alto
+            for (let i=0; i<3; i++) {
+                let pill = document.getElementById(`pill-${i}`);
+                if (i === index) {
+                    pill.className = "bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 truncate px-1";
+                } else {
+                    pill.className = "bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1";
+                }
+            }
+
+            // Mappa
+            if (mappaApp && r.lat && r.lng) {
+                markerLayers.forEach(m => mappaApp.removeLayer(m));
+                markerLayers = [];
+                const marker = L.marker([r.lat, r.lng]).addTo(mappaApp);
+                marker.bindPopup(`<b class="text-black">${r.nomeRistorante}</b>`).openPopup();
+                markerLayers.push(marker);
+                mappaApp.setView([r.lat, r.lng], 12);
+            }
+
+            // Sintesi vocale se attiva
+            if (voiceCopilotActive) {
+                const testo = `Opzione ${index + 1}: ${r.nomeRistorante}, all'uscita ${r.caselloUscita}. Dista ${r.tempoDalCasello} minuti. ${r.percheMerita}`;
+                const speech = new SpeechSynthesisUtterance(testo);
+                speech.lang = 'it-IT';
+                window.speechSynthesis.speak(speech);
             }
         }
-        pronunciaVoce("Copilota vocale attivato. Qual è la tua meta di viaggio?");
-        setTimeout(avviaRiconoscimentoVocaleMeta, 3000);
-    });
-}
 
-// Logiche PWA
-var deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    var installBtn = document.getElementById('pwa-install-btn');
-    if (installBtn) {
-        installBtn.classList.remove('hidden');
-        installBtn.addEventListener('click', () => {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') installBtn.classList.add('hidden');
-                deferredPrompt = null;
-            });
+        // === SLIDERS UI ===
+        document.getElementById('tempoAllaSosta').addEventListener('input', function() {
+            let val = parseInt(this.value);
+            let text = val < 60 ? `${val} minuti` : val === 60 ? `1 ora` : `${Math.floor(val/60)} h ${val%60 > 0 ? (val%60)+' min' : ''}`;
+            document.getElementById('tempo-val').textContent = text;
         });
-    }
-});
 
-const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-if (isIos() && !isInStandaloneMode()) {
-    document.getElementById('ios-install-bubble').classList.remove('hidden');
-}
+        document.getElementById('budget').addEventListener('input', function() {
+            document.getElementById('budget-val').textContent = `${this.value} €`;
+        });
+
+        // === COPILOTA VOCALE (BETA) ===
+        document.getElementById('btn-copilota-vocale').addEventListener('click', function() {
+            voiceCopilotActive = true;
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                mostraErrore("Browser non supportato per la voce.");
+                return;
+            }
+            
+            const sp = new SpeechSynthesisUtterance("Dimmi il nome della tua città di destinazione.");
+            sp.lang = 'it-IT';
+            window.speechSynthesis.speak(sp);
+            
+            sp.onend = () => {
+                const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const rec = new SpeechRec();
+                rec.lang = 'it-IT';
+                rec.start();
+                rec.onresult = function(e) {
+                    const meta = e.results[0][0].transcript;
+                    document.getElementById('meta').value = meta;
+                    const ans = new SpeechSynthesisUtterance(`Hai detto ${meta}. Clicca su Calcola Soste per iniziare.`);
+                    ans.lang = 'it-IT';
+                    window.speechSynthesis.speak(ans);
+                };
+            };
+        });
     </script>
 </body>
 </html>
