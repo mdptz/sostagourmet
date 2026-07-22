@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SostaGourmet - Copilota Vocale al Casello</title>
+	
+    <!-- Google Identity Services (Login Ufficiale Google) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Icone dell'applicazione per PWA (Android, PC e iOS) -->
     <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -43,7 +46,7 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
 
-    <!-- Finestra Modale per gli Errori (Sostituisce gli alert del browser per un look più premium) -->
+    <!-- Finestra Modale per gli Errori -->
     <div id="error-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-gray-900 border border-red-500/30 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
             <div class="text-red-500 text-4xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
@@ -53,7 +56,7 @@
         </div>
     </div>
 
-    <!-- Barra superiore di navigazione con logo e opzione installazione PWA -->
+    <!-- Barra superiore di navigazione -->
     <header class="bg-gray-950 border-b border-gray-900 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2">
             <span class="text-amber-500 text-2xl font-black tracking-tighter flex items-center gap-1.5">
@@ -61,15 +64,45 @@
             </span>
         </div>
         <div class="flex items-center gap-2">
+            <!-- Pulsante PWA -->
             <button id="pwa-install-btn" class="hidden text-xs bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
                 <i class="fa-solid fa-download"></i> Installa App
             </button>
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+            
+            <!-- Profilo utente ed Esci (Visibile solo a Login effettuato) -->
+            <div id="header-user-info" class="hidden flex items-center gap-2">
+                <span id="user-email-display" class="text-[11px] text-gray-400 font-mono max-w-[120px] sm:max-w-[180px] truncate"></span>
+                <button onclick="logout()" title="Scollegati" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1.5 rounded-xl transition active:scale-95 flex items-center gap-1">
+                    <i class="fa-solid fa-right-from-bracket"></i> Esci
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Contenitore centrale dell'applicazione -->
-    <main class="flex-grow flex flex-col justify-center max-w-lg w-full mx-auto p-4 md:p-6 space-y-6">
+    <!-- SCHERMATA DI LOGIN GOOGLE (Inizialmente attiva finché non si verifica l'utente) -->
+    <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl max-w-sm w-full text-center space-y-6 shadow-2xl">
+            <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-2xl flex items-center justify-center mx-auto text-3xl">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black text-white tracking-tight">Area Riservata</h2>
+                <p class="text-gray-400 text-xs leading-relaxed">
+                    Accedi con il tuo account Google per utilizzare il copilota e consultare le osterie.
+                </p>
+            </div>
+            
+            <!-- Contenitore del Pulsante Ufficiale Google -->
+            <div class="flex justify-center pt-2">
+                <div id="buttonDiv"></div>
+            </div>
+
+            <div id="login-error" class="text-red-400 text-xs font-semibold empty:hidden leading-relaxed"></div>
+        </div>
+    </div>
+
+    <!-- CONTENITORE PRINCIPALE DELL'APPLICAZIONE (Nascosto fino all'autenticazione) -->
+    <main id="app-main-wrapper" class="hidden flex-grow flex flex-col justify-center max-w-lg w-full mx-auto p-4 md:p-6 space-y-6">
 
         <!-- Hero di benvenuto e descrizione funzionale -->
         <div id="hero-banner" class="text-center space-y-2 mt-2">
@@ -98,7 +131,7 @@
                     <input type="text" id="ultimoCasello" required placeholder="Ultimo casello superato (es. Orvieto)" class="w-full bg-gray-800 p-3 rounded-xl text-white border border-gray-700 text-center transition-all duration-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm">
                 </div>
 
-                <!-- Parametri di sosta ed economici (Sotto forma di slider di precisione) -->
+                <!-- Parametri di sosta ed economici -->
                 <div class="space-y-4 bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl text-sm">
                     <div>
                         <div class="flex justify-between font-bold">
@@ -127,7 +160,7 @@
             </button>
         </div>
 
-        <!-- Schermata di attesa e logica di connessione server in corso -->
+        <!-- Schermata di attesa -->
         <div id="loading" class="hidden bg-gray-900 p-8 rounded-3xl border border-gray-800 text-center space-y-6 shadow-2xl py-12 max-w-sm mx-auto">
             <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
                 <div class="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
@@ -154,7 +187,7 @@
         <!-- Schermata dei risultati gastronomici e cartografici -->
         <div id="risultato" class="hidden space-y-4">
             
-            <!-- Badge dorato dinamico del casello specifico per l'osteria selezionata -->
+            <!-- Badge casello -->
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-4 rounded-2xl shadow-lg text-gray-950 flex justify-between items-center">
                 <div class="space-y-0.5">
                     <span class="text-[10px] font-bold uppercase tracking-wider opacity-75">Uscita Consigliata</span>
@@ -163,19 +196,19 @@
                 <div class="text-3xl opacity-20"><i class="fa-solid fa-road-barrier"></i></div>
             </div>
 
-            <!-- Visualizzazione cartografica interattiva di prossimità stradale -->
+            <!-- Mappa -->
             <div class="relative w-full h-48 rounded-2xl overflow-hidden border border-gray-800 shadow-xl bg-gray-900">
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <!-- Pulsanti per alternare orizzontalmente le osterie reali candidate -->
+            <!-- Pulsanti selezione osterie -->
             <div class="grid grid-cols-3 gap-2" id="scelta-osterie-pills">
                 <button onclick="mostraRistorante(0)" id="pill-0" class="bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow truncate px-1">OPZIONE 1</button>
                 <button onclick="mostraRistorante(1)" id="pill-1" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 2</button>
                 <button onclick="mostraRistorante(2)" id="pill-2" class="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 3</button>
             </div>
 
-            <!-- Scheda dettagliata del locale -->
+            <!-- Scheda dettagliata locale -->
             <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4 relative">
                 <div>
                     <h3 id="res-nome" class="text-xl font-black text-white leading-tight">-</h3>
@@ -202,12 +235,9 @@
 
                 <div class="space-y-2">
                     <span class="text-amber-500 font-bold text-xs uppercase tracking-wider block">🍝 Piatti Consigliati Slow Food:</span>
-                    <div id="res-piatti" class="flex flex-wrap gap-1.5">
-                        <!-- Iniettato dinamicamente in base alle specialità rilevate -->
-                    </div>
+                    <div id="res-piatti" class="flex flex-wrap gap-1.5"></div>
                 </div>
 
-                <!-- Azioni stradali immediate: Navigatore e Telefono -->
                 <div class="grid grid-cols-2 gap-2 pt-2">
                     <a id="btn-chiama" href="#" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl text-xs text-center transition active:scale-95 flex justify-center items-center gap-1.5 border border-gray-700">
                         <i class="fa-solid fa-phone"></i> CHIAMA LOCALE
@@ -218,7 +248,6 @@
                 </div>
             </div>
 
-            <!-- Pulsante per tornare al formulario -->
             <button onclick="tornaAlFormulario()" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-xl border border-gray-800 text-xs transition active:scale-95 flex justify-center items-center gap-1.5">
                 <i class="fa-solid fa-chevron-left"></i> NUOVA RICERCA COPILOTA
             </button>
@@ -242,18 +271,14 @@
         </p>
     </div>
 
- 	<!-- Piè di pagina dell'applicazione con Contatti Autore -->
+    <!-- Piè di pagina -->
     <footer class="bg-gray-950 border-t border-gray-900 py-4 text-center text-[10px] text-gray-600 mt-6 space-y-2.5">
-        <div>
-            SostaGourmet © 2026 • Realizzato da mdpt
-        </div>
-        <!-- I tuoi link di contatto (Stile Premium coordinato) -->
+        <div>SostaGourmet © 2026 • Realizzato da mdpt</div>
         <div class="flex justify-center items-center gap-4 text-xs text-gray-500 font-medium">
             <a href="mailto:mttdptrz@gmail.com" class="hover:text-amber-500 transition-colors duration-200 flex items-center gap-1">
                 <i class="fa-solid fa-envelope"></i> Email
             </a>
             <span class="text-gray-800">•</span>
-         
         </div>
     </footer>
 
@@ -261,6 +286,7 @@
         // ==========================================
         // 1. CONFIGURAZIONI E STATO GLOBALE
         // ==========================================
+        const GOOGLE_CLIENT_ID = "975846730385-oqqmrm4log2k0k1bpbd5nu884699tkm0.apps.googleusercontent.com";
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
 
         var ristorantiTrovati = [];
@@ -270,8 +296,112 @@
         var isUnloading = false;
         var isListeningForMeta = false;
 
+        function getUserEmail() {
+            return localStorage.getItem("user_email") || "";
+        }
+
         // ==========================================
-        // 2. FUNZIONI CORE E RISPOSTE SERVER (Dichiarate subito)
+        // 2. GESTIONE AUTENTICAZIONE GOOGLE
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', function () {
+            const savedEmail = getUserEmail();
+            if (savedEmail) {
+                // Se c'è un'email in memoria, verificala silenziosamente col server
+                verificaAccessoServer(savedEmail);
+            } else {
+                mostraSchermataLogin();
+            }
+        });
+
+        function mostraSchermataLogin() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-main-wrapper').classList.add('hidden');
+            document.getElementById('header-user-info').classList.add('hidden');
+
+            // Inizializza pulsante Google
+            if (window.google && google.accounts && google.accounts.id) {
+                inizializzaPulsanteGoogle();
+            } else {
+                window.onload = inizializzaPulsanteGoogle;
+            }
+        }
+
+        function inizializzaPulsanteGoogle() {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"),
+                { theme: "outline", size: "large", type: "standard", shape: "pill" }
+            );
+        }
+
+        function handleCredentialResponse(response) {
+            try {
+                const payload = parseJwt(response.credential);
+                if (payload && payload.email) {
+                    verificaAccessoServer(payload.email);
+                } else {
+                    document.getElementById('login-error').textContent = "Impossibile rilevare l'email dall'account Google.";
+                }
+            } catch (e) {
+                document.getElementById('login-error').textContent = "Errore durante il parsing del login Google.";
+            }
+        }
+
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function verificaAccessoServer(email) {
+            document.getElementById('login-error').textContent = "";
+            
+            fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "verificaAccesso",
+                    userEmail: email
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data && data.authorized) {
+                    localStorage.setItem("user_email", email);
+                    sbloccaApplicazione(email);
+                } else {
+                    localStorage.removeItem("user_email");
+                    mostraSchermataLogin();
+                    document.getElementById('login-error').textContent = (data && data.error) ? data.error : "Accesso non autorizzato per l'account " + email;
+                }
+            })
+            .catch(function(err) {
+                console.error("Errore verifica server:", err);
+                document.getElementById('login-error').textContent = "Errore di connessione con il server di autenticazione.";
+            });
+        }
+
+        function sbloccaApplicazione(email) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-main-wrapper').classList.remove('hidden');
+            document.getElementById('header-user-info').classList.remove('hidden');
+            document.getElementById('user-email-display').textContent = email;
+        }
+
+        function logout() {
+            localStorage.removeItem("user_email");
+            location.reload();
+        }
+
+        // ==========================================
+        // 3. FUNZIONI CORE E RISPOSTE SERVER
         // ==========================================
         function mostraErrore(messaggio) {
             document.getElementById('error-modal-msg').textContent = messaggio;
@@ -308,7 +438,7 @@
                 return "1 ora";
             } else {
                 var ore = Math.floor(minuti / 60);
-                var restanti = minuti % 60; // FIX: Cambiato da 'minutes' a 'minuti'
+                var restanti = minuti % 60;
                 if (restanti === 0) {
                     return ore + (ore === 1 ? " ora" : " ore");
                 }
@@ -327,7 +457,11 @@
         }
 
         function inviaDatiAlServer(azione, dati, onOk, onKo) {
-            var payload = { action: azione, datiViaggio: dati };
+            var payload = { 
+                action: azione, 
+                userEmail: getUserEmail(), 
+                datiViaggio: dati 
+            };
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" }, 
@@ -450,7 +584,12 @@
                 if (btnGps) btnGps.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> GEOLOCALIZZAZIONE...';
 
                 navigator.geolocation.getCurrentPosition(function(pos) {
-                    var payload = { action: "rilevaPosizione", lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    var payload = { 
+                        action: "rilevaPosizione", 
+                        userEmail: getUserEmail(),
+                        lat: pos.coords.latitude, 
+                        lon: pos.coords.longitude 
+                    };
                     fetch(APPS_SCRIPT_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -507,7 +646,7 @@
         }
 
         // ==========================================
-        // 3. EVENT LISTENERS E ATTIVAZIONI DOM
+        // 4. EVENT LISTENERS E ATTIVAZIONI DOM
         // ==========================================
         var form = document.getElementById('viaggio-form');
         if (form) {
@@ -526,7 +665,6 @@
                     distanzaMaxCasello: 15
                 };
 
-                // Ora onSuccess e onFailure sono dichiarate al 100% sopra e non falliranno
                 inviaDatiAlServer("chiamaGemini", datiViaggio, onSuccess, onFailure);
             });
         }
@@ -600,9 +738,5 @@
             document.getElementById('ios-install-bubble').classList.remove('hidden');
         }
     </script>
-	
-	
-
-	
 </body>
 </html>
