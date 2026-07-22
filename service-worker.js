@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sostagourmet-v10'; // INCREMENTARE la Vx: Forza il browser a scaricare il nuovo HTML senza leggiCache!
+const CACHE_NAME = 'sostagourmet-v11'; // INCREMENTARE la Vx: Forza il browser a scaricare il nuovo HTML senza leggiCache!
 const ASSETS = [
   './index.html',
   './manifest.json',
