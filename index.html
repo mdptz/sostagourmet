@@ -278,7 +278,6 @@
             if (response && response.credential) {
                 document.getElementById('login-error').textContent = "Verifica autorizzazione in corso...";
                 
-                // Invia l'idToken a Apps Script per la verifica del login
                 fetch(APPS_SCRIPT_URL, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -367,45 +366,57 @@
             return pulito.length > 10 ? pulito.substring(0, 9) + ".." : pulito;
         }
 
-        document.getElementById('btn-gps').addEventListener('click', function() {
-            const btn = this;
-            if (!navigator.geolocation) {
-                mostraErrore("GPS non supportato dal tuo browser.");
-                return;
-            }
-            
-            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> RICERCA...';
-            
-            navigator.geolocation.getCurrentPosition(
-                function(pos) {
-                    const datiGps = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                    
-                    chiamaServer("rilevaPosizione", datiGps, 
-                        function(risposta) {
-                            const casello = risposta.ultimoCasello || risposta.casello || risposta.nomeCasello;
-                            const autostrada = risposta.autostrada || risposta.nomeAutostrada;
-                            
-                            if (casello) {
-                                document.getElementById('ultimoCasello').value = casello;
-                                document.getElementById('autostrada').value = autostrada || "A1";
-                                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> TROVATO';
-                            } else {
-                                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                                mostraErrore("Coordinate rilevate, ma nessun casello autostradale nelle vicinanze.");
+        // === FUNZIONE GEOLOCALIZZAZIONE GPS REUTILIZZABILE ===
+        function eseguiGeolocalizzazioneGPS() {
+            return new Promise((resolve, reject) => {
+                const btn = document.getElementById('btn-gps');
+                if (!navigator.geolocation) {
+                    mostraErrore("GPS non supportato dal tuo browser.");
+                    reject("GPS non supportato");
+                    return;
+                }
+                
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> RICERCA...';
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        const datiGps = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        
+                        chiamaServer("rilevaPosizione", datiGps, 
+                            function(risposta) {
+                                const casello = risposta.ultimoCasello || risposta.casello || risposta.nomeCasello;
+                                const autostrada = risposta.autostrada || risposta.nomeAutostrada;
+                                
+                                if (casello) {
+                                    document.getElementById('ultimoCasello').value = casello;
+                                    document.getElementById('autostrada').value = autostrada || "A1";
+                                    if (btn) btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> TROVATO';
+                                    resolve(risposta);
+                                } else {
+                                    if (btn) btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                                    mostraErrore("Coordinate rilevate, ma nessun casello autostradale nelle vicinanze.");
+                                    reject("Nessun casello");
+                                }
+                            },
+                            function(err) {
+                                if (btn) btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                                mostraErrore(err);
+                                reject(err);
                             }
-                        },
-                        function(err) {
-                            btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                            mostraErrore(err);
-                        }
-                    );
-                }, 
-                function(err) {
-                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                    mostraErrore("Impossibile accedere al GPS del telefono. Verifica i permessi.");
-                }, 
-                { timeout: 10000, enableHighAccuracy: true }
-            );
+                        );
+                    }, 
+                    function(err) {
+                        if (btn) btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
+                        mostraErrore("Impossibile accedere al GPS del telefono. Verifica i permessi.");
+                        reject(err);
+                    }, 
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            });
+        }
+
+        document.getElementById('btn-gps').addEventListener('click', function() {
+            eseguiGeolocalizzazioneGPS().catch(e => console.log("GPS annullato o fallito"));
         });
 
         document.getElementById('viaggio-form').addEventListener('submit', function(e) {
@@ -505,9 +516,7 @@
 
             if (voiceCopilotActive) {
                 const testo = `Opzione ${index + 1}: ${r.nomeRistorante}, all'uscita ${r.caselloUscita}. Dista ${r.tempoDalCasello} minuti. ${r.percheMerita}`;
-                const speech = new SpeechSynthesisUtterance(testo);
-                speech.lang = 'it-IT';
-                window.speechSynthesis.speak(speech);
+                pronunciaVocale(testo);
             }
         }
 
@@ -521,31 +530,69 @@
             document.getElementById('budget-val').textContent = `${this.value} €`;
         });
 
-        document.getElementById('btn-copilota-vocale').addEventListener('click', function() {
+        // === MOTORE SINTESI VOCALE CON CALLBACK ===
+        function pronunciaVocale(testo, onEndCallback) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const speech = new SpeechSynthesisUtterance(testo);
+                speech.lang = 'it-IT';
+                speech.rate = 1.0;
+                if (onEndCallback) speech.onend = onEndCallback;
+                window.speechSynthesis.speak(speech);
+            } else if (onEndCallback) {
+                onEndCallback();
+            }
+        }
+
+        // === COPILOTA VOCALE INTELLIGENTE ===
+        document.getElementById('btn-copilota-vocale').addEventListener('click', async function() {
             voiceCopilotActive = true;
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                mostraErrore("Browser non supportato per la voce.");
+                mostraErrore("Riconoscimento vocale non supportato da questo browser.");
                 return;
             }
             
-            const sp = new SpeechSynthesisUtterance("Dimmi il nome della tua città di destinazione.");
-            sp.lang = 'it-IT';
-            window.speechSynthesis.speak(sp);
-            
-            sp.onend = () => {
+            const autostrada = document.getElementById('autostrada').value;
+            const casello = document.getElementById('ultimoCasello').value;
+
+            // Se i dati del veicolo non sono inseriti, avvia prima il GPS
+            if (!autostrada || !casello) {
+                pronunciaVocale("Avvio la localizzazione GPS per rilevare la tua posizione attuale.", async () => {
+                    try {
+                        await eseguiGeolocalizzazioneGPS();
+                        chiediMetaVocale();
+                    } catch (err) {
+                        pronunciaVocale("Impossibile agganciare il GPS. Inserisci i dati a mano prima di procedere.");
+                    }
+                });
+            } else {
+                chiediMetaVocale();
+            }
+        });
+
+        function chiediMetaVocale() {
+            pronunciaVocale("Dove stai andando? Dimmi la tua città di destinazione.", () => {
                 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const rec = new SpeechRec();
                 rec.lang = 'it-IT';
+                rec.interimResults = false;
+                rec.maxAlternatives = 1;
                 rec.start();
+
                 rec.onresult = function(e) {
                     const meta = e.results[0][0].transcript;
                     document.getElementById('meta').value = meta;
-                    const ans = new SpeechSynthesisUtterance(`Hai detto ${meta}. Clicca su Calcola Soste per iniziare.`);
-                    ans.lang = 'it-IT';
-                    window.speechSynthesis.speak(ans);
+                    
+                    pronunciaVocale(`Destinazione ${meta} impostata. Avvio il calcolo per le soste gourmet.`, () => {
+                        document.getElementById('viaggio-form').dispatchEvent(new Event('submit'));
+                    });
                 };
-            };
-        });
+
+                rec.onerror = function() {
+                    pronunciaVocale("Non ho capito la destinazione. Riprova a premere il tasto vocale.");
+                };
+            });
+        }
     </script>
 </body>
 </html>
