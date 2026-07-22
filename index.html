@@ -64,7 +64,6 @@
         </div>
         <div class="flex items-center gap-2">
             <div id="header-user-info" class="hidden flex items-center gap-2">
-                <span id="user-email-display" class="text-[11px] text-gray-400 font-mono max-w-[120px] truncate"></span>
                 <button onclick="eseguiLogout()" title="Scollegati" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1.5 rounded-xl transition active:scale-95 flex items-center gap-1">
                     <i class="fa-solid fa-right-from-bracket"></i> Esci
                 </button>
@@ -308,7 +307,6 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-main-wrapper').classList.remove('hidden');
             document.getElementById('header-user-info').classList.remove('hidden');
-            document.getElementById('user-email-display').textContent = email;
         }
 
         function eseguiLogout() {
