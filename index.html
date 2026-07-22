@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SostaGourmet - Copilota Vocale</title>
     
-    <!-- Google Identity Services (Login Ufficiale Google) -->
+    <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Icone PWA -->
@@ -27,7 +27,6 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Stile slider premium */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -163,19 +162,16 @@
                 <div class="text-3xl opacity-20"><i class="fa-solid fa-road-barrier"></i></div>
             </div>
 
-            <!-- Mappa -->
             <div class="relative w-full h-48 rounded-2xl overflow-hidden border border-gray-800 shadow-xl bg-gray-900">
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <!-- Pulsanti Osterie -->
             <div class="grid grid-cols-3 gap-2" id="scelta-osterie-pills">
                 <button onclick="mostraRistorante(0)" id="pill-0" class="hidden bg-amber-500 text-gray-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 truncate px-1">OPZIONE 1</button>
                 <button onclick="mostraRistorante(1)" id="pill-1" class="hidden bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 2</button>
                 <button onclick="mostraRistorante(2)" id="pill-2" class="hidden bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs border border-gray-800 transition active:scale-95 truncate px-1">OPZIONE 3</button>
             </div>
 
-            <!-- Dettaglio Osteria -->
             <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-4">
                 <div>
                     <h3 id="res-nome" class="text-xl font-black text-white">-</h3>
@@ -218,7 +214,6 @@
 
     <!-- SCRIPT PRINCIPALE -->
     <script>
-        // === VARIABILI GLOBALI E CONFIGURAZIONE ===
         const GOOGLE_CLIENT_ID = "975846730385-oqqmrm4log2k0k1bpbd5nu884699tkm0.apps.googleusercontent.com";
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn0PWyCrtbp-J3M0be6Czd7OJw8PTYYqDqeGgg7ws9a4nMgv2VIzQ0KZQGSHJTKUdZ/exec";
         const STORAGE_KEY = "sostagourmet_user_email";
@@ -229,10 +224,8 @@
         let ristorantiCorrenti = [];
         let voiceCopilotActive = false;
 
-        // === GESTIONE MEMORIA SICURA ===
         function getSafeEmail() {
             let email = localStorage.getItem(STORAGE_KEY);
-            // Pulizia aggressiva della memoria se trova valori corrotti come "undefined"
             if (!email || email === "undefined" || email === "null" || email.trim() === "") {
                 localStorage.removeItem(STORAGE_KEY);
                 return null;
@@ -246,23 +239,6 @@
             }
         }
 
-        // === DECODER JWT GOOGLE IN LOCALE ===
-        // Questo impedisce per sempre che la mail si perda o arrivi undefined
-        function decodeGoogleJWT(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
-                return JSON.parse(jsonPayload);
-            } catch (e) {
-                console.error("Errore fatale decodifica Google Token", e);
-                return null;
-            }
-        }
-
-        // === INIZIALIZZAZIONE AL CARICAMENTO ===
         window.addEventListener('DOMContentLoaded', () => {
             const emailInMemoria = getSafeEmail();
             if (emailInMemoria) {
@@ -272,13 +248,11 @@
             }
         });
 
-        // === FUNZIONI INTERFACCIA LOGIN ===
         function mostraInterfacciaLogin() {
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-main-wrapper').classList.add('hidden');
             document.getElementById('header-user-info').classList.add('hidden');
             
-            // Attende che lo script di Google sia caricato, poi disegna il pulsante
             const checkGoogleInterval = setInterval(() => {
                 if (window.google && window.google.accounts) {
                     clearInterval(checkGoogleInterval);
@@ -288,7 +262,7 @@
         }
 
         function disegnaPulsanteGoogle() {
-            if (gsiInitialized) return; // Evita errori in console
+            if (gsiInitialized) return;
             
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
@@ -303,25 +277,30 @@
 
         function gestisciRispostaGoogle(response) {
             if (response && response.credential) {
-                const userData = decodeGoogleJWT(response.credential);
-                if (userData && userData.email) {
-                    const extractedEmail = userData.email;
-                    document.getElementById('login-error').textContent = "Verifica autorizzazione in corso...";
-                    
-                    // Controlla nel Foglio Google se l'email è autorizzata
-                    chiamaServer("verificaAccesso", { userEmail: extractedEmail }, 
-                        function(successData) {
-                            setSafeEmail(extractedEmail);
-                            attivaInterfacciaApp(extractedEmail);
-                        },
-                        function(errorMsg) {
-                            eseguiLogout();
-                            document.getElementById('login-error').textContent = errorMsg || "Accesso non autorizzato.";
-                        }
-                    );
-                } else {
-                    document.getElementById('login-error').textContent = "Impossibile leggere l'email da Google.";
-                }
+                document.getElementById('login-error').textContent = "Verifica autorizzazione in corso...";
+                
+                // Invia l'idToken a Apps Script per la verifica del login
+                fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: "verificaAccesso",
+                        idToken: response.credential
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.authorized && data.userEmail) {
+                        setSafeEmail(data.userEmail);
+                        attivaInterfacciaApp(data.userEmail);
+                        document.getElementById('login-error').textContent = "";
+                    } else {
+                        document.getElementById('login-error').textContent = (data && data.error) ? data.error : "Accesso non autorizzato.";
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('login-error').textContent = "Errore di connessione durante il login.";
+                });
             }
         }
 
@@ -337,23 +316,18 @@
             location.reload();
         }
 
-        // === MOTORE DI COMUNICAZIONE CON APPS SCRIPT (Nessun undefined amato qui) ===
         function chiamaServer(azione, datiAggiuntivi, onSuccess, onFail) {
-            // Se l'azione non è il primo login, usiamo l'email della memoria
-            let emailDaInviare = datiAggiuntivi.userEmail || getSafeEmail();
-            
-            if (!emailDaInviare) {
-                onFail("Sessione scaduta o email mancante.");
+            let email = getSafeEmail();
+            if (!email) {
+                onFail("Sessione scaduta. Effettua nuovamente il login.");
                 return;
             }
 
             const payload = { 
                 action: azione, 
-                userEmail: emailDaInviare, 
+                userEmail: email, 
                 ...datiAggiuntivi 
             };
-
-            console.log(`[API] Invio richiesta: ${azione}`, payload); // Log per F12
 
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
@@ -362,20 +336,17 @@
             })
             .then(res => res.json())
             .then(data => {
-                console.log(`[API] Risposta da ${azione}:`, data); // Log per F12
-                if (data.authorized === false) {
-                    onFail(data.error || "Non sei autorizzato all'uso dell'app.");
+                if (data && data.authorized === false) {
+                    onFail(data.error || "Non autorizzato.");
                 } else {
                     onSuccess(data);
                 }
             })
             .catch(err => {
-                console.error("[API] Errore critico di rete:", err);
                 onFail("Errore di connessione al server.");
             });
         }
 
-        // === UI & UTILITA' ===
         function mostraErrore(msg) {
             document.getElementById('error-modal-msg').textContent = msg;
             document.getElementById('error-modal').classList.remove('hidden');
@@ -398,7 +369,6 @@
             return pulito.length > 10 ? pulito.substring(0, 9) + ".." : pulito;
         }
 
-        // === LOGICA GPS ===
         document.getElementById('btn-gps').addEventListener('click', function() {
             const btn = this;
             if (!navigator.geolocation) {
@@ -414,7 +384,6 @@
                     
                     chiamaServer("rilevaPosizione", datiGps, 
                         function(risposta) {
-                            // Supporta le varie nomenclature di Apps Script
                             const casello = risposta.ultimoCasello || risposta.casello || risposta.nomeCasello;
                             const autostrada = risposta.autostrada || risposta.nomeAutostrada;
                             
@@ -424,7 +393,7 @@
                                 btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> TROVATO';
                             } else {
                                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                                mostraErrore("Coordinate rilevate, ma non sei vicino ad alcun casello autostradale.");
+                                mostraErrore("Coordinate rilevate, ma nessun casello autostradale nelle vicinanze.");
                             }
                         },
                         function(err) {
@@ -435,13 +404,12 @@
                 }, 
                 function(err) {
                     btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS';
-                    mostraErrore("Impossibile accedere al GPS del telefono. Controlla i permessi.");
+                    mostraErrore("Impossibile accedere al GPS del telefono. Verifica i permessi.");
                 }, 
                 { timeout: 10000, enableHighAccuracy: true }
             );
         });
 
-        // === LOGICA GEMINI & RICERCA ===
         document.getElementById('viaggio-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -471,7 +439,6 @@
                     document.getElementById('loading').classList.add('hidden');
                     document.getElementById('risultato').classList.remove('hidden');
                     
-                    // Costruisce i bottoni in alto
                     for (let i=0; i<3; i++) {
                         let pill = document.getElementById(`pill-${i}`);
                         if (ristorantiCorrenti[i]) {
@@ -490,7 +457,6 @@
             );
         });
 
-        // === MAPPA & VISUALIZZAZIONE DATI ===
         function inizializzaMappa() {
             if (mappaApp !== null) return;
             mappaApp = L.map('map', { zoomControl: false }).setView([41.9, 12.5], 6);
@@ -501,7 +467,6 @@
             const r = ristorantiCorrenti[index];
             if (!r) return;
 
-            // Aggiorna UI
             document.getElementById('res-casello').textContent = r.caselloUscita || "USCITA";
             document.getElementById('res-nome').textContent = r.nomeRistorante;
             document.getElementById('res-indirizzo').innerHTML = `<i class="fa-solid fa-map-location-dot text-amber-500"></i> ${r.indirizzo}`;
@@ -509,7 +474,6 @@
             document.getElementById('res-prezzo').textContent = r.prezzoMedioStimato;
             document.getElementById('res-motivo').textContent = r.percheMerita;
             
-            // Piatti
             const pBox = document.getElementById('res-piatti');
             pBox.innerHTML = '';
             if (r.piattiConsigliati && r.piattiConsigliati.length > 0) {
@@ -520,11 +484,9 @@
                 pBox.innerHTML = '<span class="text-gray-600 italic text-[10px]">Nessuna informazione sui piatti</span>';
             }
 
-            // Pulsanti Azione
             document.getElementById('btn-chiama').href = r.telefono ? `tel:${r.telefono}` : "#";
             document.getElementById('btn-naviga').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.nomeRistorante + ", " + r.indirizzo)}`;
 
-            // Colora i bottoni in alto
             for (let i=0; i<3; i++) {
                 let pill = document.getElementById(`pill-${i}`);
                 if (i === index) {
@@ -534,7 +496,6 @@
                 }
             }
 
-            // Mappa
             if (mappaApp && r.lat && r.lng) {
                 markerLayers.forEach(m => mappaApp.removeLayer(m));
                 markerLayers = [];
@@ -544,7 +505,6 @@
                 mappaApp.setView([r.lat, r.lng], 12);
             }
 
-            // Sintesi vocale se attiva
             if (voiceCopilotActive) {
                 const testo = `Opzione ${index + 1}: ${r.nomeRistorante}, all'uscita ${r.caselloUscita}. Dista ${r.tempoDalCasello} minuti. ${r.percheMerita}`;
                 const speech = new SpeechSynthesisUtterance(testo);
@@ -553,7 +513,6 @@
             }
         }
 
-        // === SLIDERS UI ===
         document.getElementById('tempoAllaSosta').addEventListener('input', function() {
             let val = parseInt(this.value);
             let text = val < 60 ? `${val} minuti` : val === 60 ? `1 ora` : `${Math.floor(val/60)} h ${val%60 > 0 ? (val%60)+' min' : ''}`;
@@ -564,7 +523,6 @@
             document.getElementById('budget-val').textContent = `${this.value} €`;
         });
 
-        // === COPILOTA VOCALE (BETA) ===
         document.getElementById('btn-copilota-vocale').addEventListener('click', function() {
             voiceCopilotActive = true;
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
