@@ -55,6 +55,13 @@
         </div>
     </div>
 
+    <!-- BOLLA INSTALLAZIONE PWA (iOS) -->
+    <div id="ios-install-bubble" class="hidden fixed bottom-6 left-4 right-4 bg-gray-800 border border-gray-700 p-4 rounded-2xl shadow-2xl z-50 text-center space-y-2 animate-bounce">
+        <p class="text-white text-xs font-bold"><i class="fa-brands fa-apple text-gray-400"></i> Installa SostaGourmet su iPhone</p>
+        <p class="text-gray-400 text-[10px]">Tocca l'icona <i class="fa-solid fa-arrow-up-from-bracket mx-1"></i> in basso e scegli <b>"Aggiungi alla schermata Home"</b>.</p>
+        <button onclick="document.getElementById('ios-install-bubble').classList.add('hidden')" class="mt-2 text-amber-500 font-bold text-xs uppercase">Ho capito</button>
+    </div>
+
     <!-- HEADER STRUMENTI -->
     <header class="bg-gray-950 border-b border-gray-900 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2">
@@ -99,6 +106,12 @@
 
         <!-- FORM RICERCA -->
         <div id="app-content" class="space-y-4">
+            
+            <!-- PULSANTE INSTALLAZIONE PWA (Android/PC) -->
+            <button id="pwa-install-btn" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2 text-sm border border-emerald-500/50 mb-2">
+                <i class="fa-solid fa-download"></i> INSTALLA APP SUL DISPOSITIVO
+            </button>
+
             <form id="viaggio-form" class="space-y-4">
                 <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-xl space-y-3">
                     <div class="flex justify-between items-center mb-1">
@@ -223,6 +236,36 @@
         let ristorantiCorrenti = [];
         let voiceCopilotActive = false;
 
+        // === PWA INSTALLATION LOGIC ===
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+                installBtn.addEventListener('click', () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            installBtn.classList.add('hidden');
+                        }
+                        deferredPrompt = null;
+                    });
+                });
+            }
+        });
+
+        // Controlla se è un dispositivo iOS
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        };
+        // Controlla se l'app è già installata/aperta come standalone (Homescreen)
+        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        // === FINE PWA LOGIC ===
+
         function getSafeEmail() {
             let email = localStorage.getItem(STORAGE_KEY);
             if (!email || email === "undefined" || email === "null" || email.trim() === "") {
@@ -244,6 +287,12 @@
                 attivaInterfacciaApp(emailInMemoria);
             } else {
                 mostraInterfacciaLogin();
+            }
+
+            // Mostra il banner per iOS se non è in modalità standalone
+            if (isIos() && !isInStandaloneMode()) {
+                const iosBubble = document.getElementById('ios-install-bubble');
+                if (iosBubble) iosBubble.classList.remove('hidden');
             }
         });
 
