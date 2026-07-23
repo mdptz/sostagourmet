@@ -1,44 +1,66 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Sfumatura Oro/Ambra Piena -->
-    <linearGradient id="pinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FBBF24"/>
-      <stop offset="50%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#D97706"/>
+    <!-- Sfumatura Oro Intensa per il Pin Pieno -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="35%" stop-color="#F59E0B"/>
+      <stop offset="70%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    
+    <!-- Sfumatura Dettagli Oro Chiaro -->
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
 
-  <!-- Sfondo Dark Rounded -->
+  <!-- Sfondo Dark Rounded dell'App Icon -->
   <rect width="512" height="512" rx="112" fill="#0F172A"/>
 
-  <!-- Sagoma Esterna Pin GPS PIENA -->
-  <path d="M 256 60 C 150 60, 95 130, 95 225 C 95 330, 256 450, 256 450 C 256 450, 417 330, 417 225 C 417 130, 362 60, 256 60 Z" 
-        fill="url(#pinGrad)"/>
+  <!-- 1. PIN GPS COMPLETAMENTE PIENO D'ORO -->
+  <path d="M 256 50 C 145 50, 90 125, 90 225 C 90 335, 256 460, 256 460 C 256 460, 422 335, 422 225 C 422 125, 367 50, 256 50 Z" 
+        fill="url(#goldGrad)"/>
 
-  <!-- Strada Scura in Curva che sale dentro il Pin -->
-  <path d="M 256 420 C 190 330, 310 290, 256 220" 
+  <!-- 2. STRADA SCURA: Invertita orizzontalmente rispetto a prima -->
+  <!-- Vecchia: C 160 350, 350 280, 256 210 C 205 160, 215 100, 256 70 -->
+  <!-- Nuova (X = 512 - old_X): C 352 350, 162 280, 256 210 C 307 160, 297 100, 256 70 -->
+  <path d="M 256 430 C 352 350, 162 280, 256 210 C 307 160, 297 100, 256 70" 
         fill="none" 
         stroke="#0F172A" 
-        stroke-width="36" 
+        stroke-width="48" 
         stroke-linecap="round"/>
 
-  <!-- Tratteggio Dorato di mezzeria della strada -->
-  <path d="M 256 420 C 190 330, 310 290, 256 220" 
+  <!-- Linea di mezzeria tratteggiata dorata -->
+  <path d="M 256 430 C 352 350, 162 280, 256 210 C 307 160, 297 100, 256 70" 
         fill="none" 
-        stroke="#FBBF24" 
-        stroke-width="6" 
+        stroke="url(#goldLight)" 
+        stroke-width="7" 
         stroke-linecap="round" 
-        stroke-dasharray="12 10"/>
+        stroke-dasharray="14 12"/>
 
-  <!-- Cloche Scura in alto dentro il Pin -->
-  <path d="M 186 210 C 186 140, 326 140, 326 210 Z" fill="#0F172A"/>
-  <rect x="174" y="214" width="164" height="14" rx="7" fill="#0F172A"/>
+  <!-- 3. CLOCHE GOURMET (in rilievo sopra la strada) -->
+  <!-- Cupola Cloche -->
+  <path d="M 186 210 C 186 140, 326 140, 326 210 Z" 
+        fill="#0F172A" 
+        stroke="url(#goldLight)" 
+        stroke-width="4"/>
+  
+  <!-- Bordo inferiore del vassoio -->
+  <rect x="170" y="212" width="172" height="16" rx="8" 
+        fill="#0F172A" 
+        stroke="url(#goldLight)" 
+        stroke-width="4"/>
 
   <!-- Pomello / Dettaglio Fogliolina della Cloche -->
-  <circle cx="256" cy="132" r="10" fill="#0F172A"/>
+  <circle cx="256" cy="132" r="10" 
+          fill="#0F172A" 
+          stroke="url(#goldLight)" 
+          stroke-width="3"/>
+          
   <path d="M 256 122 C 272 106, 286 112, 278 128" 
         fill="none" 
         stroke="#FFFFFF" 
-        stroke-width="5" 
+        stroke-width="4" 
         stroke-linecap="round"/>
 </svg>
